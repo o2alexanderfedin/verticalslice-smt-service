@@ -176,6 +176,10 @@ Provide the revised formalization now (just the text, no explanation)."""
         On retries, uses conversation-based refinement: provides the previous SMT-LIB
         code and degradation score, asking Claude to refine it to reduce information loss.
 
+        CRITICAL: Temperature is hardcoded to 0.0 for deterministic code generation.
+        This is non-configurable by design - extraction MUST produce consistent,
+        reproducible SMT-LIB output. Temperature does NOT vary across retry attempts.
+
         Args:
             formal_text: Formalized text with explicit semantics
             detail_level: Annotation detail level (0.0-1.0, default: 0.6)
@@ -232,7 +236,10 @@ whatever is needed to reduce information loss and correctly represent the formal
             message = await self._client.messages.create(
                 model=self._model,
                 max_tokens=self._max_tokens,
-                temperature=0.0,  # Deterministic for code generation
+                # CRITICAL: Temperature MUST be 0.0 for deterministic code generation
+                # DO NOT make this configurable or allow it to vary across retries
+                # Extraction requires consistent, reproducible SMT-LIB output
+                temperature=0.0,
                 messages=messages,
             )
 

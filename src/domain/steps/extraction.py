@@ -86,6 +86,8 @@ class ExtractionStep:
         previous_degradation: float | None = None
 
         # Retry loop with conversation-based refinement
+        # NOTE: Temperature is NOT varied here - it stays at 0.0 for all attempts
+        # (hardcoded in LLM client for deterministic code generation)
         for attempt in range(self.max_retries):
             # Increase detail level on each attempt (for logging purposes)
             detail_level = min(1.0, self.detail_start + attempt * self.detail_step)
