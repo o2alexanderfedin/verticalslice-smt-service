@@ -1,0 +1,542 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Semantic-Preserving SMT-LIB Pipeline",
+    "description": "\n# Semantic-Preserving SMT-LIB Pipeline Service\n\nTransform informal natural language into verified, executable SMT-LIB code through a rigorous semantic-preserving pipeline.\n\n## Overview\n\nThis service provides a production-grade API for converting informal logical constraints into formal SMT-LIB code that can be executed by SMT solvers. It ensures semantic preservation through multiple quality gates and automatic error correction.\n\n## Pipeline Architecture\n\nThe service implements a three-step pipeline with quality verification at each stage:\n\n### 1. Formalization (\u226591% Semantic Similarity)\n- Converts informal text to formal representation using Claude AI\n- Verifies semantic preservation with embedding similarity\n- Automatic retry with increasing temperature\n- Maximum 3 attempts\n\n### 2. SMT-LIB Extraction (\u22645% Information Loss)\n- Generates annotated SMT-LIB code from formal text\n- Measures information degradation with embedding comparison\n- Automatic retry with increasing detail level\n- Maximum 5 attempts\n\n### 3. Solver Validation (Error-Free Execution)\n- Executes code with Z3 SMT solver\n- Validates syntax and logical correctness\n- Claude-powered automatic error fixing\n- Maximum 3 attempts\n\n## Key Features\n\n- **Semantic Verification**: Embedding-based similarity measurement at each step\n- **Quality Gates**: Strict thresholds ensure output quality\n- **Automatic Retry**: Intelligent retry mechanisms with adaptive parameters\n- **Error Recovery**: AI-powered error fixing for solver failures\n- **Comprehensive Metrics**: Detailed performance and quality metrics\n- **Manual Review Flags**: Identifies outputs requiring human validation\n\n## Quality Guarantees\n\n- **Formalization Similarity**: \u226591% embedding similarity\n- **Information Preservation**: \u22645% degradation allowed\n- **Solver Validation**: Must execute without errors\n- **End-to-End Testing**: All outputs verified with Z3 solver\n\n## Technology Stack\n\n- **API Framework**: FastAPI (async, high performance)\n- **AI Model**: Claude Sonnet 4.5 (Anthropic)\n- **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)\n- **SMT Solver**: Z3 (Microsoft Research)\n- **Language**: Python 3.12+ with type hints\n\n## Use Cases\n\n- Formal verification of requirements\n- Automated constraint generation\n- Natural language to logic transformation\n- SMT solver integration\n- Formal methods tooling\n\n## Documentation\n\n- **Swagger UI**: Interactive API documentation and testing\n- **ReDoc**: Alternative documentation view\n- **Examples**: Curated test cases at `/pipeline/examples`\n- **Health Check**: Service status at `/health`\n\n## Support\n\nFor issues, questions, or feature requests, please refer to the project repository.\n    ",
+    "contact": {
+      "name": "SMT Pipeline Team",
+      "email": "support@example.com"
+    },
+    "license": {
+      "name": "MIT License",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/pipeline/process": {
+      "post": {
+        "tags": [
+          "pipeline",
+          "Pipeline Processing"
+        ],
+        "summary": "Process informal text to verified SMT-LIB output",
+        "description": "Transform informal natural language into verified, executable SMT-LIB code through a semantic-preserving pipeline.\n\n    ## Pipeline Overview\n\n    This endpoint executes a rigorous three-step process with quality gates at each stage:\n\n    ### Step 1: Formalization\n    - Converts informal text to formal, structured representation\n    - Uses Claude AI with semantic embeddings for verification\n    - **Quality Gate**: \u226591% embedding similarity required\n    - Automatic retry with increasing temperature if threshold not met\n    - Maximum 3 attempts before failure\n\n    ### Step 2: SMT-LIB Extraction\n    - Generates annotated SMT-LIB code from formal text\n    - Includes variable declarations, assertions, and solver commands\n    - **Quality Gate**: \u22645% information degradation allowed\n    - Automatic retry with increasing detail level if threshold exceeded\n    - Maximum 5 attempts before failure\n\n    ### Step 3: Solver Validation\n    - Executes generated code with Z3 SMT solver\n    - Validates syntax and logical correctness\n    - Captures solver results (sat/unsat/unknown)\n    - **Quality Gate**: Must execute without errors\n    - Automatic retry with Claude-powered error fixing if needed\n    - Maximum 3 attempts before failure\n\n    ## Quality Assurance\n\n    - All outputs meet strict quality thresholds\n    - Semantic similarity verified with embeddings\n    - Information preservation measured at each step\n    - Solver execution confirms syntactic and logical correctness\n    - Manual review flagged for edge cases\n\n    ## Performance\n\n    - Typical processing time: 3-10 seconds\n    - Depends on text complexity and retry attempts\n    - Detailed metrics returned in response\n\n    ## Example Request\n\n    ```json\n    {\n      \"informal_text\": \"x must be greater than 5 and less than 10\"\n    }\n    ```\n\n    ## Example Success Response (200)\n\n    ```json\n    {\n      \"informal_text\": \"x must be greater than 5 and less than 10\",\n      \"formal_text\": \"The integer variable x must satisfy: x > 5 AND x < 10\",\n      \"formalization_similarity\": 0.95,\n      \"smt_lib_code\": \"(declare-const x Int)\\n(assert (> x 5))\\n(assert (< x 10))\\n(check-sat)\\n(get-model)\",\n      \"extraction_degradation\": 0.03,\n      \"check_sat_result\": \"sat\",\n      \"model\": \"((x 7))\",\n      \"unsat_core\": null,\n      \"solver_success\": true,\n      \"metrics\": { ... },\n      \"passed_all_checks\": true,\n      \"requires_manual_review\": false\n    }\n    ```\n\n    ## Error Scenarios\n\n    - **422 Unprocessable Entity**: Pipeline processing failed at one of the three steps\n    - **500 Internal Server Error**: Unexpected system error (API failures, etc.)",
+        "operationId": "process_informal_text_pipeline_process_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully processed text through all three pipeline steps",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessResponse"
+                },
+                "example": {
+                  "informal_text": "x must be greater than 5 and less than 10",
+                  "formal_text": "The integer variable x must satisfy the following constraints: x is greater than 5 AND x is less than 10",
+                  "formalization_similarity": 0.95,
+                  "smt_lib_code": "; Formalization: The integer variable x must satisfy: x > 5 AND x < 10\n(declare-const x Int)\n(assert (> x 5))\n(assert (< x 10))\n(check-sat)\n(get-model)",
+                  "extraction_degradation": 0.03,
+                  "check_sat_result": "sat",
+                  "model": "((x 7))",
+                  "solver_success": true,
+                  "metrics": {
+                    "formalization_attempts": 1,
+                    "final_formalization_similarity": 0.95,
+                    "formalization_time_seconds": 1.2,
+                    "extraction_attempts": 1,
+                    "final_extraction_degradation": 0.03,
+                    "extraction_time_seconds": 1.5,
+                    "validation_attempts": 1,
+                    "solver_execution_time_seconds": 0.3,
+                    "total_time_seconds": 3.0,
+                    "success": true
+                  },
+                  "passed_all_checks": true,
+                  "requires_manual_review": false
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Pipeline processing failed at formalization, extraction, or validation step",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "formalization_failure": {
+                    "summary": "Formalization failed to meet similarity threshold",
+                    "value": {
+                      "error": "Formalization failed: Could not achieve required similarity threshold after 3 attempts",
+                      "details": {
+                        "step": "formalization",
+                        "attempts": 3,
+                        "final_similarity": 0.89,
+                        "threshold": 0.91
+                      }
+                    }
+                  },
+                  "extraction_failure": {
+                    "summary": "Extraction exceeded degradation threshold",
+                    "value": {
+                      "error": "Extraction failed: Information degradation too high after 5 attempts",
+                      "details": {
+                        "step": "extraction",
+                        "attempts": 5,
+                        "final_degradation": 0.08,
+                        "threshold": 0.05
+                      }
+                    }
+                  },
+                  "validation_failure": {
+                    "summary": "Solver validation failed with syntax error",
+                    "value": {
+                      "error": "Validation failed: SMT solver execution error after 3 attempts",
+                      "details": {
+                        "step": "validation",
+                        "solver_output": "Parse error at line 3: unexpected token"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error (API failure, system error, etc.)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Internal server error during pipeline processing"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipeline/examples": {
+      "get": {
+        "tags": [
+          "pipeline",
+          "Pipeline Processing"
+        ],
+        "summary": "Get example informal texts for testing the pipeline",
+        "description": "Retrieve a curated list of example informal text inputs for testing the pipeline.\n\n    These examples cover various complexity levels and constraint types:\n    - Simple numeric constraints\n    - Multiple variable relationships\n    - Conditional logic\n    - Edge cases and boundary conditions\n\n    Each example includes:\n    - `text`: The informal text suitable for the /process endpoint\n    - `description`: What the example demonstrates\n    - `expected_result`: Expected check-sat outcome (sat/unsat)\n\n    Use these examples to:\n    - Test the pipeline functionality\n    - Understand what inputs work well\n    - Learn SMT-LIB constraint patterns\n    - Validate API integration\n\n    ## Example Response\n\n    ```json\n    [\n      {\n        \"text\": \"x must be greater than 5 and less than 10\",\n        \"description\": \"Simple range constraint\",\n        \"expected_result\": \"sat\"\n      },\n      {\n        \"text\": \"x must be greater than 10 and less than 5\",\n        \"description\": \"Unsatisfiable constraint\",\n        \"expected_result\": \"unsat\"\n      }\n    ]\n    ```",
+        "operationId": "get_examples_pipeline_examples_get",
+        "responses": {
+          "200": {
+            "description": "List of example texts with descriptions and expected outcomes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Get Examples Pipeline Examples Get"
+                },
+                "example": [
+                  {
+                    "text": "x must be greater than 5 and less than 10",
+                    "description": "Simple satisfiable range constraint on integer variable",
+                    "expected_result": "sat"
+                  },
+                  {
+                    "text": "x must be greater than 10 and less than 5",
+                    "description": "Unsatisfiable constraint (impossible range)",
+                    "expected_result": "unsat"
+                  },
+                  {
+                    "text": "the sum of a and b must equal 10",
+                    "description": "Arithmetic relationship between two variables",
+                    "expected_result": "sat"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health & Status"
+        ],
+        "summary": "Service health check",
+        "description": "Check the health and status of the SMT Pipeline service.\n\n    Returns basic service information including:\n    - **status**: Current service health (healthy/degraded/unhealthy)\n    - **service**: Service name\n    - **version**: Current API version\n    - **model**: AI model being used (Claude version)\n    - **embedding_model**: Embedding model for semantic comparison\n\n    Use this endpoint for:\n    - Service monitoring and alerting\n    - Load balancer health checks\n    - Deployment verification\n    - Status page integration\n\n    ## Example Response\n\n    ```json\n    {\n      \"status\": \"healthy\",\n      \"service\": \"Semantic-Preserving SMT-LIB Pipeline\",\n      \"version\": \"0.1.0\",\n      \"model\": \"claude-sonnet-4-5-20250929\",\n      \"embedding_model\": \"sentence-transformers/all-MiniLM-L6-v2\"\n    }\n    ```",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Service is healthy and operational",
+            "content": {
+              "application/json": {
+                "schema": {},
+                "example": {
+                  "status": "healthy",
+                  "service": "Semantic-Preserving SMT-LIB Pipeline",
+                  "version": "0.1.0",
+                  "model": "claude-sonnet-4-5-20250929",
+                  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Human-readable error message describing what went wrong. Includes the pipeline step that failed (formalization/extraction/validation) and the specific reason for failure.",
+            "examples": [
+              "Formalization failed: Could not achieve required similarity threshold (0.89 < 0.91)",
+              "Extraction failed: Information degradation too high (0.08 > 0.05)",
+              "Validation failed: SMT solver execution error - syntax error on line 3"
+            ]
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details",
+            "description": "Additional structured error details for debugging. May include: attempt counts, quality scores, solver output, or other diagnostic information. Not always present - only included when relevant context is available.",
+            "examples": [
+              {
+                "attempts": 3,
+                "final_similarity": 0.89,
+                "step": "formalization",
+                "threshold": 0.91
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse",
+        "description": "Error response model returned when pipeline processing fails.\n\nProvides detailed information about what went wrong and at which stage,\nhelping developers debug issues with their input or understand processing limitations.",
+        "examples": [
+          {
+            "details": {
+              "attempts": 3,
+              "final_similarity": 0.89,
+              "step": "formalization",
+              "threshold": 0.91
+            },
+            "error": "Formalization failed: Could not achieve required similarity threshold after 3 attempts"
+          },
+          {
+            "details": {
+              "solver_output": "Parse error at line 3: unexpected token ','",
+              "step": "validation"
+            },
+            "error": "Validation failed: SMT solver syntax error"
+          }
+        ]
+      },
+      "PipelineMetrics": {
+        "properties": {
+          "formalization_attempts": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Formalization Attempts",
+            "description": "Number of attempts required to achieve formalization similarity threshold (1-10)"
+          },
+          "final_formalization_similarity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Final Formalization Similarity",
+            "description": "Final embedding similarity score between informal and formal text (0.0-1.0, threshold: 0.91)"
+          },
+          "formalization_time_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Formalization Time Seconds",
+            "description": "Total time spent on formalization step in seconds"
+          },
+          "extraction_attempts": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Extraction Attempts",
+            "description": "Number of attempts required to achieve extraction degradation threshold (1-10)"
+          },
+          "final_extraction_degradation": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Final Extraction Degradation",
+            "description": "Final information degradation score from formal text to SMT-LIB (0.0-1.0, threshold: 0.05)"
+          },
+          "extraction_time_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Extraction Time Seconds",
+            "description": "Total time spent on SMT-LIB extraction step in seconds"
+          },
+          "validation_attempts": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Validation Attempts",
+            "description": "Number of attempts required to achieve successful solver execution (1-10, includes error fixes)"
+          },
+          "solver_execution_time_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Solver Execution Time Seconds",
+            "description": "Total time spent executing SMT solver in seconds"
+          },
+          "total_time_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Total Time Seconds",
+            "description": "Total end-to-end pipeline execution time in seconds"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the entire pipeline completed successfully (all steps passed)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "formalization_attempts",
+          "final_formalization_similarity",
+          "formalization_time_seconds",
+          "extraction_attempts",
+          "final_extraction_degradation",
+          "extraction_time_seconds",
+          "validation_attempts",
+          "solver_execution_time_seconds",
+          "total_time_seconds",
+          "success"
+        ],
+        "title": "PipelineMetrics",
+        "description": "Performance and quality metrics for the entire pipeline."
+      },
+      "ProcessRequest": {
+        "properties": {
+          "informal_text": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Informal Text",
+            "description": "Informal natural language text containing logical constraints or rules to process. Should describe conditions, relationships, or requirements that can be formalized. Examples: 'x must be greater than 5', 'the sum of a and b equals 10', 'all employees must have a valid ID number'",
+            "examples": [
+              "x must be greater than 5 and less than 10",
+              "the sum of a and b must equal 10",
+              "if x is even then y must be odd"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "informal_text"
+        ],
+        "title": "ProcessRequest",
+        "description": "Request model for processing informal text through the semantic-preserving pipeline.\n\nThe informal text will be transformed through three rigorous steps:\n1. **Formalization**: Converts informal text to formal representation (\u226591% semantic similarity required)\n2. **SMT-LIB Extraction**: Generates annotated SMT-LIB code (\u22645% information loss allowed)\n3. **Solver Validation**: Executes with Z3 solver to verify correctness (must produce valid output)\n\nEach step includes automatic retry mechanisms with increasing temperature/detail\nto ensure quality thresholds are met.",
+        "examples": [
+          {
+            "informal_text": "x must be greater than 5 and less than 10"
+          },
+          {
+            "informal_text": "the sum of a and b must equal 10"
+          },
+          {
+            "informal_text": "if x is positive then y must be negative"
+          }
+        ]
+      },
+      "ProcessResponse": {
+        "properties": {
+          "informal_text": {
+            "type": "string",
+            "title": "Informal Text",
+            "description": "The original informal natural language text that was processed"
+          },
+          "formal_text": {
+            "type": "string",
+            "title": "Formal Text",
+            "description": "Formalized version of the informal text with preserved semantics. This text maintains the same meaning but uses more precise, structured language suitable for further processing.",
+            "examples": [
+              "The integer variable x must satisfy the constraint: x > 5 AND x < 10"
+            ]
+          },
+          "formalization_similarity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Formalization Similarity",
+            "description": "Cosine similarity score between informal and formal text embeddings. Measures semantic preservation. Threshold: \u22650.91 required for acceptance. Range: 0.0 (completely different) to 1.0 (semantically identical).",
+            "examples": [
+              0.95
+            ]
+          },
+          "smt_lib_code": {
+            "type": "string",
+            "title": "Smt Lib Code",
+            "description": "Complete annotated SMT-LIB code that can be executed by Z3 solver. Includes variable declarations, assertions, and solver commands. Contains inline comments explaining the formalization.",
+            "examples": [
+              "(declare-const x Int)\n(assert (> x 5))\n(assert (< x 10))\n(check-sat)\n(get-model)"
+            ]
+          },
+          "extraction_degradation": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Extraction Degradation",
+            "description": "Information degradation score from formal text to SMT-LIB code. Measures information loss during extraction. Threshold: \u22640.05 required for acceptance. Range: 0.0 (no information lost) to 1.0 (complete information loss).",
+            "examples": [
+              0.03
+            ]
+          },
+          "check_sat_result": {
+            "type": "string",
+            "title": "Check Sat Result",
+            "description": "Result from SMT solver's (check-sat) command. Possible values: 'sat' (satisfiable - solution exists), 'unsat' (unsatisfiable - no solution possible), 'unknown' (solver could not determine), or an error message if execution failed.",
+            "examples": [
+              "sat"
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model (variable assignments) from solver if check-sat returned 'sat'. Shows concrete values that satisfy all constraints. Example: '((x 7))' means x=7 satisfies the constraints. None if result was 'unsat' or 'unknown'.",
+            "examples": [
+              "((x 7))"
+            ]
+          },
+          "unsat_core": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unsat Core",
+            "description": "Minimal unsatisfiable core from solver if check-sat returned 'unsat'. Identifies the conflicting subset of constraints. Useful for debugging why no solution exists. None if result was 'sat' or 'unknown'."
+          },
+          "solver_success": {
+            "type": "boolean",
+            "title": "Solver Success",
+            "description": "Whether the SMT solver executed successfully without errors. True means the solver ran and produced a valid result (sat/unsat/unknown). False means there were execution errors (syntax errors, timeouts, etc.).",
+            "examples": [
+              true
+            ]
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/PipelineMetrics",
+            "description": "Detailed performance and quality metrics for all three pipeline steps. Includes attempt counts, execution times, and quality scores. Useful for monitoring pipeline performance and identifying bottlenecks."
+          },
+          "passed_all_checks": {
+            "type": "boolean",
+            "title": "Passed All Checks",
+            "description": "Whether all quality thresholds were met across all three steps. True means: formalization_similarity \u2265 0.91, extraction_degradation \u2264 0.05, and solver executed successfully. False means at least one threshold was not met (though processing may have continued).",
+            "examples": [
+              true
+            ]
+          },
+          "requires_manual_review": {
+            "type": "boolean",
+            "title": "Requires Manual Review",
+            "description": "Whether this output should be manually reviewed by a human. Triggered when: quality scores are close to thresholds, multiple retry attempts were needed, or other risk indicators are present. True does not mean the output is incorrect, just that extra caution is advised.",
+            "examples": [
+              false
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "informal_text",
+          "formal_text",
+          "formalization_similarity",
+          "smt_lib_code",
+          "extraction_degradation",
+          "check_sat_result",
+          "solver_success",
+          "metrics",
+          "passed_all_checks",
+          "requires_manual_review"
+        ],
+        "title": "ProcessResponse",
+        "description": "Response model containing complete verified output from the semantic-preserving pipeline.\n\nThis response includes outputs from all three pipeline steps, performance metrics,\nand quality indicators. All outputs have been verified to meet semantic similarity\nand information preservation thresholds.",
+        "examples": [
+          {
+            "check_sat_result": "sat",
+            "extraction_degradation": 0.03,
+            "formal_text": "The integer variable x must satisfy the following constraints: x is greater than 5 AND x is less than 10",
+            "formalization_similarity": 0.95,
+            "informal_text": "x must be greater than 5 and less than 10",
+            "metrics": {
+              "extraction_attempts": 1,
+              "extraction_time_seconds": 1.5,
+              "final_extraction_degradation": 0.03,
+              "final_formalization_similarity": 0.95,
+              "formalization_attempts": 1,
+              "formalization_time_seconds": 1.2,
+              "solver_execution_time_seconds": 0.3,
+              "success": true,
+              "total_time_seconds": 3.0,
+              "validation_attempts": 1
+            },
+            "model": "((x 7))",
+            "passed_all_checks": true,
+            "requires_manual_review": false,
+            "smt_lib_code": "; Formalization: The integer variable x must satisfy: x > 5 AND x < 10\n(declare-const x Int)\n(assert (> x 5))\n(assert (< x 10))\n(check-sat)\n(get-model)",
+            "solver_success": true
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Pipeline Processing",
+      "description": "Core pipeline endpoints for processing informal text to SMT-LIB code"
+    },
+    {
+      "name": "Health & Status",
+      "description": "Service health check and status endpoints"
+    }
+  ]
+}

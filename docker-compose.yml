@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  smt-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smt-pipeline-service
+    ports:
+      - "8000:8000"
+    environment:
+      # Anthropic API Configuration
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+
+      # Embedding Model Configuration
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+      # Pipeline Quality Thresholds
+      - FORMALIZATION_SIMILARITY_THRESHOLD=0.91
+      - EXTRACTION_DEGRADATION_THRESHOLD=0.05
+
+      # Retry Configuration
+      - MAX_FORMALIZATION_RETRIES=3
+      - MAX_EXTRACTION_RETRIES=5
+      - MAX_VALIDATION_RETRIES=3
+
+      # SMT Solver Configuration
+      - SMT_SOLVER_TIMEOUT=30
+
+      # Optional: Logging level
+      - LOG_LEVEL=INFO
+
+    # Load environment variables from .env file
+    # This allows overriding defaults above
+    env_file:
+      - .env
+
+    # Health check configuration
+    # Ensures the service is responsive and functioning
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Restart policy
+    # unless-stopped: Restart on failure, but not if manually stopped
+    restart: unless-stopped
+
+    # Resource limits (optional but recommended for production)
+    # Adjust based on your workload and available resources
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+    # Network configuration
+    networks:
+      - smt-network
+
+networks:
+  smt-network:
+    driver: bridge
+    name: smt-pipeline-network

@@ -1,0 +1,104 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Environment files (never copy secrets into image)
+.env
+.env.*
+!.env.example
+
+# Documentation (not needed in runtime container)
+docs/
+*.md
+!README.md
+
+# AI/LLM project-specific files
+.memory_bank/
+prompts/
+.claude/
+CLAUDE.md
+AI_SWE_article.md
+AI_SWE_SETUP_VALIDATION.md
+COMMANDS_DOCUMENTATION.md
+FILE_INDEX.md
+IMPLEMENTATION_PLAN.md
+linkedin-post.md
+PROJECT_NOTES.md
+QUICK_START.md
+SetupMemoryBank-prompt.md
+TEMPLATE_STRATEGY.md
+
+# Tests (run tests before building)
+tests/
+test_*.py
+*_test.py
+
+# Scripts and hooks
+scripts/
+hooks/
+templates/
+
+# Cookiecutter and template files
+cookiecutter.json
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+wheels/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~

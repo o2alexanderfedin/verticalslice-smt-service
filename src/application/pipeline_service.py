@@ -1,0 +1,265 @@
+"""Pipeline service orchestrating the three-step verification process.
+
+This is the application layer that coordinates domain logic.
+"""
+
+import logging
+import time
+from typing import TYPE_CHECKING
+
+from src.shared.result import Result, Ok, Err
+from src.domain.models import VerifiedOutput, PipelineMetrics
+from src.domain.exceptions import PipelineError
+from src.domain.steps.formalization import FormalizationStep
+from src.domain.steps.extraction import ExtractionStep
+from src.domain.steps.validation import ValidationStep
+from src.domain.verification.embedding_verifier import EmbeddingDistanceVerifier
+
+if TYPE_CHECKING:
+    from src.domain.protocols import EmbeddingProvider, LLMProvider, SMTSolver
+    from src.shared.config import Settings
+
+logger = logging.getLogger(__name__)
+
+
+class PipelineService:
+    """Orchestrates the three-step pipeline for SMT-LIB generation."""
+
+    def __init__(
+        self,
+        embedding_provider: 'EmbeddingProvider',
+        llm_provider: 'LLMProvider',
+        smt_solver: 'SMTSolver',
+        settings: 'Settings'
+    ):
+        """Initialize pipeline service.
+
+        Args:
+            embedding_provider: Provider for text embeddings
+            llm_provider: Provider for LLM interactions
+            smt_solver: SMT solver executor
+            settings: Application settings
+        """
+        self.embedding_provider = embedding_provider
+        self.llm_provider = llm_provider
+        self.smt_solver = smt_solver
+        self.settings = settings
+
+        # Create semantic verifier (shared across steps)
+        self.semantic_verifier = EmbeddingDistanceVerifier()
+
+        logger.info("PipelineService initialized")
+
+    async def process(
+        self,
+        informal_text: str,
+        skip_formalization: bool = False
+    ) -> Result[VerifiedOutput, PipelineError]:
+        """Process informal text through the complete pipeline.
+
+        Orchestrates all three steps sequentially:
+        1. Formalization with semantic verification
+        2. Extraction with degradation check
+        3. Validation with solver execution
+
+        Args:
+            informal_text: Input natural language text
+            skip_formalization: If True, skip formalization and treat input as already formal
+
+        Returns:
+            Ok(VerifiedOutput) if pipeline succeeds
+            Err(PipelineError) if any step fails
+        """
+        logger.info(f"Starting pipeline processing (text_length={len(informal_text)})")
+        pipeline_start = time.time()
+
+        # Step 1: Formalization
+        logger.info("=== Step 1: Formalization ===")
+        formalization_start = time.time()
+
+        formalization_step = FormalizationStep(
+            llm_provider=self.llm_provider,
+            embedding_provider=self.embedding_provider,
+            verifier=self.semantic_verifier,
+            threshold=self.settings.formalization_similarity_threshold,
+            max_retries=self.settings.formalization_max_retries,
+            temp_start=self.settings.formalization_temp_start,
+            temp_step=self.settings.formalization_temp_step,
+            skip_threshold=self.settings.formalization_skip_threshold
+        )
+
+        formalization_result = await formalization_step.execute(
+            informal_text,
+            force_skip=skip_formalization
+        )
+        formalization_time = time.time() - formalization_start
+
+        match formalization_result:
+            case Err(error):
+                logger.error(f"Step 1 failed: {error}")
+                return Err(error)
+            case Ok(formalization_output):
+                logger.info(
+                    f"Step 1 succeeded: similarity={formalization_output.similarity_score:.4f}, "
+                    f"attempts={formalization_output.attempts}"
+                )
+                formal_text = formalization_output.formal_text
+
+        # Step 2: Extraction
+        logger.info("=== Step 2: Extraction ===")
+        extraction_start = time.time()
+
+        extraction_step = ExtractionStep(
+            llm_provider=self.llm_provider,
+            embedding_provider=self.embedding_provider,
+            verifier=self.semantic_verifier,
+            max_degradation=self.settings.extraction_max_degradation,
+            max_retries=self.settings.extraction_max_retries,
+            detail_start=self.settings.extraction_detail_start,
+            detail_step=self.settings.extraction_detail_step
+        )
+
+        extraction_result = await extraction_step.execute(formal_text)
+        extraction_time = time.time() - extraction_start
+
+        match extraction_result:
+            case Err(error):
+                logger.error(f"Step 2 failed: {error}")
+                return Err(error)
+            case Ok(extraction_output):
+                logger.info(
+                    f"Step 2 succeeded: degradation={extraction_output.degradation:.4f}, "
+                    f"attempts={extraction_output.attempts}"
+                )
+                smt_code = extraction_output.smt_lib_code
+
+        # Step 3: Validation
+        logger.info("=== Step 3: Validation ===")
+        validation_start = time.time()
+
+        validation_step = ValidationStep(
+            llm_provider=self.llm_provider,
+            smt_solver=self.smt_solver,
+            max_retries=self.settings.validation_max_retries,
+            solver_timeout=30.0
+        )
+
+        validation_result = await validation_step.execute(smt_code)
+        validation_time = time.time() - validation_start
+
+        match validation_result:
+            case Err(error):
+                logger.error(f"Step 3 failed: {error}")
+                return Err(error)
+            case Ok(solver_output):
+                logger.info(
+                    f"Step 3 succeeded: result={solver_output.check_sat_result}, "
+                    f"attempts={solver_output.attempts}"
+                )
+
+        # Build pipeline metrics
+        total_time = time.time() - pipeline_start
+
+        metrics = PipelineMetrics(
+            formalization_attempts=formalization_output.attempts,
+            final_formalization_similarity=formalization_output.similarity_score,
+            formalization_time_seconds=formalization_time,
+            extraction_attempts=extraction_output.attempts,
+            final_extraction_degradation=extraction_output.degradation,
+            extraction_time_seconds=extraction_time,
+            validation_attempts=solver_output.attempts,
+            solver_execution_time_seconds=validation_time,
+            total_time_seconds=total_time,
+            success=True
+        )
+
+        # Determine if manual review is required
+        requires_manual_review = self._should_require_manual_review(
+            formalization_output.attempts,
+            formalization_output.similarity_score,
+            extraction_output.attempts,
+            extraction_output.degradation,
+            solver_output.attempts
+        )
+
+        # Build final verified output
+        verified_output = VerifiedOutput(
+            informal_text=informal_text,
+            formal_text=formal_text,
+            formalization_similarity=formalization_output.similarity_score,
+            smt_lib_code=smt_code,
+            extraction_degradation=extraction_output.degradation,
+            check_sat_result=solver_output.check_sat_result,
+            model=solver_output.model,
+            unsat_core=solver_output.unsat_core,
+            solver_success=solver_output.success,
+            metrics=metrics,
+            passed_all_checks=True,
+            requires_manual_review=requires_manual_review
+        )
+
+        logger.info(
+            f"Pipeline completed successfully in {total_time:.2f}s "
+            f"(manual_review={requires_manual_review})"
+        )
+
+        return Ok(verified_output)
+
+    def _should_require_manual_review(
+        self,
+        formalization_attempts: int,
+        formalization_similarity: float,
+        extraction_attempts: int,
+        extraction_degradation: float,
+        validation_attempts: int
+    ) -> bool:
+        """Determine if manual review is recommended.
+
+        Triggers:
+        1. High retry count in any step
+        2. Similarity/degradation close to thresholds
+
+        Args:
+            formalization_attempts: Number of formalization attempts
+            formalization_similarity: Final similarity score
+            extraction_attempts: Number of extraction attempts
+            extraction_degradation: Final degradation score
+            validation_attempts: Number of validation attempts
+
+        Returns:
+            True if manual review is recommended
+        """
+        # Check high retry counts
+        high_retry_threshold = self.settings.manual_review_high_retry_threshold
+
+        if formalization_attempts > high_retry_threshold:
+            logger.info(f"Manual review triggered: high formalization attempts ({formalization_attempts})")
+            return True
+
+        if extraction_attempts > high_retry_threshold:
+            logger.info(f"Manual review triggered: high extraction attempts ({extraction_attempts})")
+            return True
+
+        if validation_attempts > high_retry_threshold:
+            logger.info(f"Manual review triggered: high validation attempts ({validation_attempts})")
+            return True
+
+        # Check if similarity is close to threshold
+        similarity_margin = formalization_similarity - self.settings.formalization_similarity_threshold
+        if similarity_margin < self.settings.manual_review_similarity_close_threshold:
+            logger.info(
+                f"Manual review triggered: similarity close to threshold "
+                f"(margin={similarity_margin:.4f})"
+            )
+            return True
+
+        # Check if degradation is close to threshold
+        degradation_margin = self.settings.extraction_max_degradation - extraction_degradation
+        if degradation_margin < self.settings.manual_review_similarity_close_threshold:
+            logger.info(
+                f"Manual review triggered: degradation close to threshold "
+                f"(margin={degradation_margin:.4f})"
+            )
+            return True
+
+        return False

@@ -1,0 +1,73 @@
+version: '3.8'
+
+# Development-specific docker-compose configuration
+# Extends the base docker-compose.yml with dev-friendly features
+
+services:
+  smt-pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Optional: Use cache to speed up rebuilds
+      cache_from:
+        - smt-pipeline:latest
+    container_name: smt-pipeline-dev
+    ports:
+      - "8000:8000"
+
+    # Mount source code as volume for hot reload
+    # WARNING: This overrides the COPY in Dockerfile
+    volumes:
+      - ./src:/app/src:ro  # Read-only to prevent container from modifying host
+
+    environment:
+      # Anthropic API Configuration
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
+
+      # Embedding Model Configuration
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+      # Pipeline Quality Thresholds (more lenient for faster iteration)
+      - FORMALIZATION_SIMILARITY_THRESHOLD=0.85
+      - EXTRACTION_DEGRADATION_THRESHOLD=0.08
+
+      # Retry Configuration (fewer retries for faster feedback)
+      - MAX_FORMALIZATION_RETRIES=2
+      - MAX_EXTRACTION_RETRIES=3
+      - MAX_VALIDATION_RETRIES=2
+
+      # SMT Solver Configuration
+      - SMT_SOLVER_TIMEOUT=20
+
+      # Development: Enable debug logging
+      - LOG_LEVEL=DEBUG
+
+      # Development: Enable auto-reload (if uvicorn supports it)
+      - AUTO_RELOAD=true
+
+    # Load environment variables from .env file
+    env_file:
+      - .env
+
+    # Health check (same as production)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Restart policy (more aggressive for development)
+    restart: on-failure
+
+    # No resource limits in development (use all available resources)
+
+    # Network configuration
+    networks:
+      - smt-network-dev
+
+networks:
+  smt-network-dev:
+    driver: bridge
+    name: smt-pipeline-network-dev

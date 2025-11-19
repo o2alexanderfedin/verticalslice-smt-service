@@ -1,0 +1,48 @@
+# ===========================
+# Core FastAPI Dependencies
+# ===========================
+fastapi>=0.104.0,<1.0.0
+uvicorn[standard]>=0.24.0,<1.0.0
+
+# ===========================
+# Data Validation & Settings
+# ===========================
+pydantic>=2.0.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# ===========================
+# LLM Integration (Anthropic)
+# ===========================
+anthropic>=0.25.0,<1.0.0
+httpx>=0.25.0,<1.0.0
+
+# ===========================
+# Embeddings (sentence-transformers)
+# ===========================
+sentence-transformers>=2.2.0,<3.0.0
+torch>=2.1.0,<3.0.0
+numpy>=1.24.0,<2.0.0
+
+# ===========================
+# SMT Solver Integration
+# ===========================
+# Note: z3-solver Python bindings (alternative to pySMT)
+# We use z3 binary directly, but this provides Python API if needed
+pysmt>=0.9.5,<1.0.0
+
+# ===========================
+# Utilities
+# ===========================
+python-multipart>=0.0.6,<1.0.0  # For form data handling if needed
+
+# ===========================
+# Development & Testing
+# (Optional - uncomment if needed for development)
+# ===========================
+# pytest>=7.4.0,<8.0.0
+# pytest-asyncio>=0.21.0,<1.0.0
+# pytest-cov>=4.1.0,<5.0.0
+# black>=23.0.0,<24.0.0
+# ruff>=0.1.0,<1.0.0
+# mypy>=1.7.0,<2.0.0
