@@ -205,10 +205,39 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup_event():
-    """Application startup event handler."""
+    """Application startup event handler.
+
+    Validates critical configuration and fails fast if issues are detected.
+    """
     logger.info(f"Starting {settings.api_title} v{settings.api_version}")
+
+    # CRITICAL: Validate required configuration
+    errors: list[str] = []
+
+    # Check Anthropic API key
+    if not settings.anthropic_api_key or settings.anthropic_api_key.strip() == "":
+        errors.append("ANTHROPIC_API_KEY is not set or empty")
+    elif not settings.anthropic_api_key.startswith("sk-"):
+        errors.append(
+            f"ANTHROPIC_API_KEY appears invalid (should start with 'sk-', got '{settings.anthropic_api_key[:10]}...')"
+        )
+
+    # Check model configuration
+    if not settings.anthropic_model:
+        errors.append("ANTHROPIC_MODEL is not set")
+
+    # Check embedding model
+    if not settings.embedding_model_name:
+        errors.append("EMBEDDING_MODEL_NAME is not set")
+
+    if errors:
+        error_msg = "CRITICAL CONFIGURATION ERRORS:\n" + "\n".join(f"  - {e}" for e in errors)
+        logger.critical(error_msg)
+        raise RuntimeError(error_msg)
+
     logger.info(f"Using Anthropic model: {settings.anthropic_model}")
     logger.info(f"Using embedding model: {settings.embedding_model_name}")
+    logger.info("Configuration validation passed - all critical settings are present")
 
 
 @app.on_event("shutdown")

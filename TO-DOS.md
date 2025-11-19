@@ -27,3 +27,16 @@
 ## ✅ COMPLETED: Use Exact 5-Phase SMT Prompt - 2025-11-18 22:12
 
 - **DONE: Replaced EXTRACTION_PROMPT with exact 5-phase prompt** - The exact battle-tested 5-phase prompt from convert_to_smtlib function has been implemented verbatim in `src/infrastructure/llm/prompts.py:18-98`. The prompt enforces: Phase 1 (problem comprehension with data inventory), Phase 2 (domain modeling with ground truth vs unknowns, assert-and-test pattern for YES/NO), Phase 3 (logic selection decision tree), Phase 4 (SMT-LIB encoding with uninterpreted function linking constraints), Phase 5 (self-verification checklist). Only change made: replaced `{enhanced_text}` placeholder with `{formal_text}` to match our variable naming. Function `get_extraction_prompt()` updated to use new prompt (detail_level parameter deprecated but kept for API compatibility).
+
+## Investigate Pipeline Test Failure and Add CI/CD Smoke Test - 2025-11-19 13:09
+
+- **Investigate pipeline failure for "2*2=5" test** - Simple POST request to /pipeline/process fails. **Problem:** Test curl command to production endpoint returns error - need to check logs and identify root cause (could be LLM response parsing, SMT solver execution, or extraction failure). **Files:** `src/api/routes/pipeline.py`, `src/domain/steps/extraction.py`, `src/domain/steps/validation.py`, `src/infrastructure/smt/z3_executor.py`. **Test command:**
+  ```bash
+  curl -X 'POST' \
+    'https://verticalslice-smt-service-d5hf3.ondigitalocean.app/pipeline/process' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{"informal_text": "2*2=5"}'
+  ```
+
+- **Add smoke test to CI/CD workflow** - Create basic POST test in GitHub Actions verification step. **Problem:** No production endpoint testing after deployment - only health check exists. **Files:** `.github/workflows/deploy.yml:274-295`, `.github/scripts/smoke-tests.sh` (may need creation/update). **Solution:** Add curl POST test with sample input to smoke-tests.sh, verify response contains expected fields (check_sat_result, solver_success), fail deployment if smoke test fails.
