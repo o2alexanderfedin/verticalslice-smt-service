@@ -16,6 +16,31 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _strip_markdown_fences(smt_code: str) -> str:
+    """Strip markdown code fences from SMT-LIB code.
+
+    LLMs often wrap code in ```smt-lib...``` or ```...``` fences.
+    This function removes them to get clean SMT-LIB code.
+
+    Args:
+        smt_code: Raw SMT code potentially with markdown fences
+
+    Returns:
+        Clean SMT code without fences
+    """
+    lines = smt_code.strip().split('\n')
+
+    # Remove opening fence (```smt-lib, ```smtlib, or just ```)
+    if lines and lines[0].strip().startswith('```'):
+        lines = lines[1:]
+
+    # Remove closing fence (```)
+    if lines and lines[-1].strip() == '```':
+        lines = lines[:-1]
+
+    return '\n'.join(lines).strip()
+
+
 class ValidationStep:
     """Step 3: SMT solver validation with error correction."""
 
@@ -54,7 +79,11 @@ class ValidationStep:
         """
         logger.info(f"Starting validation (smt_code_length={len(smt_code)})")
 
-        current_code = smt_code
+        # Strip markdown fences if present
+        current_code = _strip_markdown_fences(smt_code)
+        if current_code != smt_code:
+            logger.debug("Stripped markdown code fences from SMT-LIB code")
+
         last_error = ""
 
         for attempt in range(self.max_retries):
@@ -93,10 +122,12 @@ class ValidationStep:
                 if attempt < self.max_retries - 1:
                     # Use LLM to fix the error
                     logger.debug("Requesting LLM to fix SMT errors")
-                    current_code = await self.llm_provider.fix_smt_errors(
+                    fixed_code = await self.llm_provider.fix_smt_errors(
                         current_code,
                         last_error
                     )
+                    # Strip markdown fences from fixed code
+                    current_code = _strip_markdown_fences(fixed_code)
                     logger.debug("Received fixed SMT code from LLM")
 
             except Exception as e:
@@ -106,10 +137,12 @@ class ValidationStep:
                 if attempt < self.max_retries - 1:
                     # Try to fix
                     try:
-                        current_code = await self.llm_provider.fix_smt_errors(
+                        fixed_code = await self.llm_provider.fix_smt_errors(
                             current_code,
                             last_error
                         )
+                        # Strip markdown fences from fixed code
+                        current_code = _strip_markdown_fences(fixed_code)
                     except Exception as fix_error:
                         logger.error(f"Failed to fix error: {fix_error}")
                         # Continue to next iteration with same code

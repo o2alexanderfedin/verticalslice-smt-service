@@ -27,9 +27,10 @@ numpy>=1.24.0,<2.0.0
 # ===========================
 # SMT Solver Integration
 # ===========================
-# Note: z3-solver Python bindings (alternative to pySMT)
-# We use z3 binary directly, but this provides Python API if needed
+# pySMT framework for SMT solver abstraction
 pysmt>=0.9.5,<1.0.0
+# Z3 solver backend for pySMT (required)
+z3-solver==4.13.0.0
 
 # ===========================
 # Utilities

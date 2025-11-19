@@ -105,9 +105,9 @@ class PipelineMetrics(BaseModel):
 
     # Step 1: Formalization metrics
     formalization_attempts: int = Field(
-        ge=1,
+        ge=0,
         le=10,
-        description="Number of attempts required to achieve formalization similarity threshold (1-10)"
+        description="Number of attempts required to achieve formalization similarity threshold (0=skipped, 1-10=actual attempts)"
     )
     final_formalization_similarity: float = Field(
         ge=0.0,

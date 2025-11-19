@@ -104,7 +104,8 @@ class PysmtExecutor:
             formula = script.get_last_formula()
 
             # Execute with solver
-            with Solver(name=self.solver_name, logic="ALL") as solver:
+            # Note: Don't specify logic - let pySMT auto-detect from the formula
+            with Solver(name=self.solver_name) as solver:
                 solver.add_assertion(formula)
 
                 # Check satisfiability

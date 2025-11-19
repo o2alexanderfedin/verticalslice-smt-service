@@ -1,5 +1,9 @@
 # TO-DOS
 
+## Install Missing pySMT Dependency - 2025-11-18 23:03
+
+- **Install pySMT package for SMT solver validation** - Step 3 (validation) fails with "No module named 'pysmt'" error. **Problem:** Logs show "pySMT execution error: No module named 'pysmt'" when trying to validate generated SMT-LIB code with Z3 solver. The pySMT executor is initialized successfully but fails when actually executing code. **Files:** `src/infrastructure/smt/pysmt_executor.py` (uses pySMT library), `requirements.txt` or `pyproject.toml` (missing pySMT dependency). **Solution:** Add pySMT to project dependencies and install it. Check if requirements.txt or pyproject.toml exists and add `pysmt` package. Run `pip install pysmt` or equivalent package manager command. Verify Z3 solver backend is also installed (pySMT may need `pysmt-z3` or similar).
+
 ## ✅ COMPLETED: Fix Extraction Skip Logic - Accept First Attempt - 2025-11-18 22:58
 
 - **DONE: Fixed skip_retries logic to accept first attempt regardless of degradation** - Bug where extraction logged "Will accept first extraction attempt" but still failed when degradation > threshold. **Problem from logs:** For input "x > 5" (5 chars), code set max_attempts=1 but threshold check at line 148 still returned error when degradation=0.7667 > max=0.05. **Root cause:** Threshold check didn't bypass quality verification when skip_retries=True, defeating the optimization's purpose. **Fix:** Changed condition from `if degradation <= self.max_degradation:` to `if degradation <= self.max_degradation or skip_retries:` at line 148. Added conditional logging to distinguish skip acceptance from threshold-based success. Updated error messages to use max_attempts instead of self.max_retries. **Behavior now:** Short texts (< 50 chars) make 1 LLM call, compute degradation for metrics, then accept result WITHOUT quality check regardless of score.
