@@ -160,7 +160,11 @@ Provide the revised formalization now (just the text, no explanation)."""
         exceptions=(anthropic.APIError, anthropic.APITimeoutError),
     )
     async def extract_to_smtlib(
-        self, formal_text: str, detail_level: float = 0.6
+        self,
+        formal_text: str,
+        detail_level: float = 0.6,
+        previous_attempt: str | None = None,
+        previous_degradation: float | None = None
     ) -> str:
         """
         Extract formal text to SMT-LIB code using Claude.
@@ -169,32 +173,64 @@ Provide the revised formalization now (just the text, no explanation)."""
         preserving the semantic information from the formal text. The detail_level
         parameter controls annotation verbosity.
 
+        On retries, uses conversation-based refinement: provides the previous SMT-LIB
+        code and degradation score, asking Claude to refine it to reduce information loss.
+
         Args:
             formal_text: Formalized text with explicit semantics
             detail_level: Annotation detail level (0.0-1.0, default: 0.6)
+            previous_attempt: Previous SMT-LIB code attempt (for refinement)
+            previous_degradation: Degradation score of previous attempt
 
         Returns:
-            Complete annotated SMT-LIB code (executable)
+            Complete annotated SMT-LIB code (executable, or refined version)
 
         Raises:
             anthropic.APIError: If API call fails after retries
         """
-        prompt = EXTRACTION_PROMPT.format(
-            formal_text=formal_text,
-            detail_level=detail_level,
-        )
+        prompt = EXTRACTION_PROMPT.format(formal_text=formal_text)
 
         logger.debug(
             f"Calling extract_to_smtlib with detail_level={detail_level}, "
-            f"text_length={len(formal_text)}"
+            f"text_length={len(formal_text)}, "
+            f"mode={'refinement' if previous_attempt else 'first_attempt'}"
         )
 
         try:
+            # Build conversation based on whether this is a retry
+            from anthropic.types import MessageParam
+            messages: list[MessageParam] = []
+
+            if previous_attempt is None:
+                # First attempt: single message with extraction prompt
+                messages.append({"role": "user", "content": prompt})
+            else:
+                # Refinement: multi-turn conversation with feedback
+                # Turn 1: Initial extraction request
+                messages.append({"role": "user", "content": prompt})
+
+                # Turn 2: Assistant's previous attempt
+                messages.append({"role": "assistant", "content": previous_attempt})
+
+                # Turn 3: Refinement request with degradation feedback
+                refinement_prompt = f"""The information degradation was {previous_degradation:.4f}, but we need ≤0.05.
+
+This means too much semantic information was lost when converting to SMT-LIB.
+
+Please revise the SMT-LIB code to preserve MORE information from the formal text:
+- Add more detailed comments explaining the constraints
+- Include context about variable meanings and relationships
+- Preserve any semantic nuances from the formal text
+- Ensure all assertions clearly map back to the original requirements
+
+Keep the same SMT-LIB logic, but enhance annotations to reduce information loss."""
+                messages.append({"role": "user", "content": refinement_prompt})
+
             message = await self._client.messages.create(
                 model=self._model,
                 max_tokens=self._max_tokens,
                 temperature=0.0,  # Deterministic for code generation
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
             )
 
             smt_code = message.content[0].text
@@ -202,7 +238,8 @@ Provide the revised formalization now (just the text, no explanation)."""
             logger.info(
                 f"Extraction complete: "
                 f"input_length={len(formal_text)}, "
-                f"output_length={len(smt_code)}"
+                f"output_length={len(smt_code)}, "
+                f"mode={'refinement' if previous_attempt else 'first_attempt'}"
             )
 
             return smt_code

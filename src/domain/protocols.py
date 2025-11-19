@@ -56,16 +56,20 @@ class LLMProvider(Protocol):
     async def extract_to_smtlib(
         self,
         formal_text: str,
-        detail_level: float
+        detail_level: float,
+        previous_attempt: str | None = None,
+        previous_degradation: float | None = None
     ) -> str:
         """Extract SMT-LIB code from formalized text with annotations.
 
         Args:
             formal_text: Formalized text from Step 1
             detail_level: Level of detail in annotations (0.0-1.0)
+            previous_attempt: Previous SMT-LIB code attempt (for refinement)
+            previous_degradation: Degradation score of previous attempt
 
         Returns:
-            Complete SMT-LIB code with annotations
+            Complete SMT-LIB code with annotations (or refined version if previous_attempt provided)
 
         Raises:
             LLMError: If LLM call fails

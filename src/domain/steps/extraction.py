@@ -82,22 +82,27 @@ class ExtractionStep:
 
         best_degradation = 1.0
         best_smt_code = ""
+        previous_attempt: str | None = None
+        previous_degradation: float | None = None
 
-        # Retry loop with increasing detail level
+        # Retry loop with conversation-based refinement
         for attempt in range(self.max_retries):
-            # Increase detail level on each attempt
+            # Increase detail level on each attempt (for logging purposes)
             detail_level = min(1.0, self.detail_start + attempt * self.detail_step)
 
             logger.debug(
                 f"Extraction attempt {attempt + 1}/{self.max_retries} "
-                f"(detail_level={detail_level:.2f})"
+                f"(detail_level={detail_level:.2f}, "
+                f"mode={'refinement' if previous_attempt else 'first_attempt'})"
             )
 
             try:
-                # Call LLM to extract SMT-LIB
+                # Call LLM to extract SMT-LIB with optional refinement context
                 smt_code = await self.llm_provider.extract_to_smtlib(
                     formal_text,
-                    detail_level=detail_level
+                    detail_level=detail_level,
+                    previous_attempt=previous_attempt,
+                    previous_degradation=previous_degradation
                 )
 
                 # Compute embedding for SMT code (only new embedding needed)
@@ -127,6 +132,10 @@ class ExtractionStep:
                         degradation=degradation,
                         attempts=attempt + 1
                     ))
+
+                # Save for next refinement iteration
+                previous_attempt = smt_code
+                previous_degradation = degradation
 
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
