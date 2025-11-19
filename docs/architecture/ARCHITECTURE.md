@@ -16,7 +16,7 @@ This document defines the technical architecture for a production-ready, semanti
 - API Framework: FastAPI with async handlers
 - LLM: Anthropic Claude Sonnet 4.5 via async HTTP client
 - Embeddings: sentence-transformers/all-MiniLM-L6-v2 (local model)
-- SMT Solver: Z3 via async subprocess execution
+- SMT Solver: pySMT (solver-agnostic SMT-LIB parser and execution framework)
 - No persistence or caching layers (fresh processing per request)
 
 **Validation Thresholds:**
@@ -100,7 +100,7 @@ We build only what's necessary for this slice to work end-to-end, avoiding specu
 - `ValidationStep`: Only handles solver execution and error correction
 - `EmbeddingVerifier`: Only calculates embedding distances
 - `AnthropicClient`: Only communicates with Anthropic API
-- `Z3Executor`: Only executes Z3 solver
+- `PysmtExecutor`: Only executes SMT solver via pySMT
 
 **Anti-pattern Avoided**: Monolithic "PipelineProcessor" class that does everything.
 
@@ -202,24 +202,27 @@ for attempt in range(max_retries):
 - No complex orchestration frameworks (use plain async functions)
 - No elaborate caching mechanisms (process fresh each time)
 - No premature abstractions (build only what the vertical slice needs)
-- Direct subprocess execution for Z3 (no wrapper libraries)
+- Use pySMT library for solver-agnostic SMT-LIB parsing and execution
 
 **Example of Simplicity:**
 ```python
-# Simple, direct approach
+# Simple, direct approach using pySMT
+from pysmt.shortcuts import Solver
+from pysmt.smtlib.parser import SmtLibParser
+
 async def execute_solver(self, code: str) -> SolverResult:
-    process = await asyncio.create_subprocess_exec(
-        "z3", "-in",
-        stdin=asyncio.subprocess.PIPE,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    stdout, stderr = await process.communicate(code.encode())
-    return self._parse_output(stdout.decode(), stderr.decode())
+    parser = SmtLibParser()
+    script = parser.get_script(code)
+    formula = script.get_last_formula()
+
+    with Solver() as solver:
+        solver.add_assertion(formula)
+        result = solver.solve()
+        return self._create_result(result, solver)
 
 # Over-engineered alternative (AVOIDED)
 # - Complex solver factory pattern
-# - Abstract solver capability negotiation
+# - Custom SMT-LIB parser implementation
 # - Multi-stage result post-processing pipeline
 ```
 
@@ -307,7 +310,7 @@ src/
 │   │   └── sentence_transformer.py  # Embedding model wrapper
 │   └── smt/
 │       ├── __init__.py
-│       └── z3_executor.py        # Z3 solver async execution
+│       └── pysmt_executor.py     # pySMT solver execution wrapper
 │
 ├── shared/                       # Shared utilities
 │   ├── __init__.py
@@ -453,12 +456,13 @@ src/
    - Runs in thread pool to avoid blocking event loop
    - Caches model instance (singleton)
 
-4. **`infrastructure/smt/z3_executor.py`** - Z3 solver executor
-   - Async subprocess execution
+4. **`infrastructure/smt/pysmt_executor.py`** - pySMT solver executor
+   - Uses pySMT for SMT-LIB parsing and execution
    - Implements `SMTSolver` protocol
    - Parses solver output (sat/unsat/unknown)
    - Extracts models and unsat cores
    - Handles timeouts and errors
+   - Solver-agnostic (works with any pySMT-supported backend)
 
 **Design decisions:**
 - Each infrastructure component is independent (can be developed/tested separately)
@@ -498,7 +502,7 @@ sequenceDiagram
     participant Step3 as ValidationStep
     participant LLM as Anthropic Claude
     participant Embed as Embedding Model
-    participant Solver as Z3 Solver
+    participant Solver as pySMT Solver
 
     Client->>API: POST /pipeline/process
     API->>Service: process(informal_text)
@@ -624,7 +628,7 @@ flowchart TD
     A[SMT-LIB Code] --> B[Initialize attempt = 0]
     B --> C[Attempt < max_retries?]
     C -->|No| D[Return Err: ValidationError]
-    C -->|Yes| E[Execute Z3 solver]
+    C -->|Yes| E[Execute pySMT solver]
     E --> F{Solver success?}
     F -->|Yes| G[Parse check-sat result]
     G --> H{Result is sat?}
@@ -1356,8 +1360,7 @@ class SMTSolver(Protocol):
     Protocol for SMT solver execution.
 
     Implementations:
-    - Z3Executor
-    - CVC5Executor (future)
+    - PysmtExecutor (solver-agnostic via pySMT)
     """
 
     async def execute(
@@ -1598,9 +1601,11 @@ class SentenceTransformerProvider:
 ```python
 import asyncio
 from typing import Optional
+from pysmt.shortcuts import Solver
+from pysmt.smtlib.parser import SmtLibParser
 
-class Z3Executor:
-    """Async Z3 solver executor via subprocess."""
+class PysmtExecutor:
+    """Async pySMT solver executor wrapper."""
 
     async def execute(
         self,
@@ -1610,49 +1615,57 @@ class Z3Executor:
         get_unsat_core: bool = False
     ) -> SolverResult:
         """
-        Execute SMT-LIB code with Z3 solver asynchronously.
+        Execute SMT-LIB code with pySMT solver asynchronously.
 
-        Uses asyncio subprocess to avoid blocking event loop.
+        Uses asyncio to run pySMT in thread pool to avoid blocking event loop.
         """
         try:
-            # Inject options if needed
-            code_with_options = self._inject_options(
-                smt_lib_code,
+            # Parse SMT-LIB code
+            parser = SmtLibParser()
+            script = parser.get_script(smt_lib_code)
+            formula = script.get_last_formula()
+
+            # Execute solver in thread pool (pySMT is synchronous)
+            result = await asyncio.to_thread(
+                self._solve_with_pysmt,
+                formula,
                 get_model,
-                get_unsat_core
+                get_unsat_core,
+                timeout_seconds
             )
 
-            # Create async subprocess
-            process = await asyncio.create_subprocess_exec(
-                "z3", "-in",
-                stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
+            return result
 
-            # Communicate with timeout
-            try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(code_with_options.encode()),
-                    timeout=timeout_seconds
-                )
-            except asyncio.TimeoutError:
-                process.kill()
-                await process.wait()
+    def _solve_with_pysmt(
+        self,
+        formula,
+        get_model: bool,
+        get_unsat_core: bool,
+        timeout: int
+    ) -> SolverResult:
+        """Synchronous pySMT solving (called in thread pool)."""
+        with Solver() as solver:
+            solver.add_assertion(formula)
+            is_sat = solver.solve()
+
+            if is_sat:
+                model = solver.get_model() if get_model else None
                 return SolverResult(
-                    success=False,
-                    check_sat_result=f"Solver timeout after {timeout_seconds} seconds",
-                    raw_output="",
+                    success=True,
+                    check_sat_result="sat",
+                    model=str(model) if model else None,
+                    raw_output=f"sat\n{model}" if model else "sat",
                     attempts=1
                 )
-
-            # Parse output
-            return self._parse_output(
-                stdout.decode(),
-                stderr.decode(),
-                get_model,
-                get_unsat_core
-            )
+            else:
+                unsat_core = solver.get_unsat_core() if get_unsat_core else None
+                return SolverResult(
+                    success=True,
+                    check_sat_result="unsat",
+                    unsat_core=str(unsat_core) if unsat_core else None,
+                    raw_output=f"unsat\n{unsat_core}" if unsat_core else "unsat",
+                    attempts=1
+                )
 
         except Exception as e:
             raise SolverExecutionError(
@@ -2062,7 +2075,7 @@ async def process_informal_text(
     The pipeline performs:
     1. **Formalization**: Transform informal text to formal text (≥91% similarity)
     2. **Extraction**: Extract to annotated SMT-LIB code (≤5% degradation)
-    3. **Validation**: Execute with Z3 solver and return check-sat result
+    3. **Validation**: Execute with pySMT solver and return check-sat result
 
     Returns verified SMT-LIB code with check-sat result and optional model/unsat-core.
     """
@@ -2146,7 +2159,7 @@ from functools import lru_cache
 from src.application.pipeline_service import PipelineService
 from src.infrastructure.llm.client import AnthropicClient
 from src.infrastructure.embeddings.sentence_transformer import SentenceTransformerProvider
-from src.infrastructure.smt.z3_executor import Z3Executor
+from src.infrastructure.smt.pysmt_executor import PysmtExecutor
 from src.shared.config import Settings
 import logging
 
@@ -2187,16 +2200,16 @@ def get_llm_provider() -> AnthropicClient:
 
 
 @lru_cache()
-def get_smt_solver() -> Z3Executor:
+def get_smt_solver() -> PysmtExecutor:
     """Get SMT solver (singleton)."""
-    logger.info("Initializing Z3 executor")
-    return Z3Executor()
+    logger.info("Initializing pySMT executor")
+    return PysmtExecutor()
 
 
 def get_pipeline_service(
     embedding_provider: SentenceTransformerProvider = Depends(get_embedding_provider),
     llm_provider: AnthropicClient = Depends(get_llm_provider),
-    smt_solver: Z3Executor = Depends(get_smt_solver),
+    smt_solver: PysmtExecutor = Depends(get_smt_solver),
     settings: Settings = Depends(get_settings)
 ) -> PipelineService:
     """
@@ -2452,12 +2465,12 @@ async def test_pipeline_service_integration():
     """Test full pipeline with mocked LLM but real embeddings and solver."""
     # Arrange
     from src.infrastructure.embeddings.sentence_transformer import SentenceTransformerProvider
-    from src.infrastructure.smt.z3_executor import Z3Executor
+    from src.infrastructure.smt.pysmt_executor import PysmtExecutor
     from unittest.mock import AsyncMock
 
     # Real components
     embedding_provider = SentenceTransformerProvider()
-    solver = Z3Executor()
+    solver = PysmtExecutor()
 
     # Mock LLM (expensive API calls)
     mock_llm = AsyncMock()
@@ -3054,16 +3067,18 @@ def get_llm_provider(settings: Settings) -> LLMProvider:
         raise ValueError(f"Unknown LLM provider: {settings.llm_provider}")
 ```
 
-**2. Adding New SMT Solvers**
+**2. Extending SMT Solver Backend**
 
 ```python
-# Current: Z3 only
-class Z3Executor:
+# Current: pySMT with default solver
+class PysmtExecutor:
     async def execute(...) -> SolverResult: ...
 
-# Future: Add CVC5 support
-class CVC5Executor:
-    """Implements same SMTSolver protocol."""
+# Future: Configure specific solver backend via pySMT
+class PysmtExecutor:
+    """Uses pySMT - already solver-agnostic."""
+    def __init__(self, solver_name: str = "z3"):
+        self.solver_name = solver_name  # Can be z3, cvc5, msat, etc.
     async def execute(...) -> SolverResult: ...
 
 # Multi-solver validation (run both, compare results)
