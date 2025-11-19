@@ -1,0 +1,140 @@
+# Digital Ocean App Platform Specification
+# Semantic-Preserving SMT-LIB Pipeline Service
+
+name: verticalslice-smt-service
+
+# Services configuration
+services:
+  - name: api
+    # Docker image configuration
+    # This will be updated by CI/CD pipeline with the specific version tag
+    image:
+      registry_type: DOCR
+      registry: $DIGITALOCEAN_REGISTRY_NAME
+      repository: verticalslice-smt-service
+      tag: latest
+
+    # Instance configuration
+    instance_count: 1
+    instance_size_slug: professional-xs  # 1 vCPU, 2 GB RAM - suitable for ML workload
+
+    # HTTP configuration
+    http_port: 8000
+
+    # Health check configuration
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 60  # Allow time for model loading
+      period_seconds: 30
+      timeout_seconds: 10
+      success_threshold: 1
+      failure_threshold: 3
+
+    # Environment variables
+    envs:
+      # Anthropic API Configuration
+      - key: ANTHROPIC_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: ${ANTHROPIC_API_KEY}  # Set in Digital Ocean dashboard
+
+      - key: ANTHROPIC_MODEL
+        scope: RUN_TIME
+        value: "claude-sonnet-4-5-20250929"
+
+      - key: ANTHROPIC_MAX_TOKENS
+        scope: RUN_TIME
+        value: "4096"
+
+      - key: ANTHROPIC_TIMEOUT
+        scope: RUN_TIME
+        value: "120.0"
+
+      # Embedding Model Configuration
+      - key: EMBEDDING_MODEL_NAME
+        scope: RUN_TIME
+        value: "sentence-transformers/all-MiniLM-L6-v2"
+
+      # Pipeline Thresholds
+      - key: FORMALIZATION_SIMILARITY_THRESHOLD
+        scope: RUN_TIME
+        value: "0.91"
+
+      - key: EXTRACTION_MAX_DEGRADATION
+        scope: RUN_TIME
+        value: "0.05"
+
+      # Retry Configuration
+      - key: FORMALIZATION_MAX_RETRIES
+        scope: RUN_TIME
+        value: "3"
+
+      - key: EXTRACTION_MAX_RETRIES
+        scope: RUN_TIME
+        value: "5"
+
+      - key: VALIDATION_MAX_RETRIES
+        scope: RUN_TIME
+        value: "3"
+
+      # Temperature Configuration
+      - key: FORMALIZATION_TEMP_START
+        scope: RUN_TIME
+        value: "0.0"
+
+      - key: FORMALIZATION_TEMP_STEP
+        scope: RUN_TIME
+        value: "0.2"
+
+      - key: EXTRACTION_DETAIL_START
+        scope: RUN_TIME
+        value: "0.5"
+
+      - key: EXTRACTION_DETAIL_STEP
+        scope: RUN_TIME
+        value: "0.1"
+
+      # Manual Review Triggers
+      - key: MANUAL_REVIEW_HIGH_RETRY_THRESHOLD
+        scope: RUN_TIME
+        value: "2"
+
+      - key: MANUAL_REVIEW_SIMILARITY_CLOSE_THRESHOLD
+        scope: RUN_TIME
+        value: "0.02"
+
+      # API Configuration
+      - key: API_TITLE
+        scope: RUN_TIME
+        value: "Semantic-Preserving SMT-LIB Pipeline"
+
+      - key: API_VERSION
+        scope: RUN_TIME
+        value: "0.1.0"
+
+      - key: API_DESCRIPTION
+        scope: RUN_TIME
+        value: "Transform informal text to verified SMT-LIB output with semantic verification"
+
+      # CORS Configuration
+      - key: CORS_ALLOWED_ORIGINS
+        scope: RUN_TIME
+        value: '["*"]'
+
+      # Logging
+      - key: LOG_LEVEL
+        scope: RUN_TIME
+        value: "INFO"
+
+    # Routes configuration
+    routes:
+      - path: /
+
+# Region configuration
+region: nyc
+
+# Alerts
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DEPLOYMENT_LIVE
+  - rule: APP_CRASHED
