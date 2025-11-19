@@ -1,1 +1,5 @@
 # TO-DOS
+
+## ✅ COMPLETED: Use Exact 5-Phase SMT Prompt - 2025-11-18 22:12
+
+- **DONE: Replaced EXTRACTION_PROMPT with exact 5-phase prompt** - The exact battle-tested 5-phase prompt from convert_to_smtlib function has been implemented verbatim in `src/infrastructure/llm/prompts.py:18-98`. The prompt enforces: Phase 1 (problem comprehension with data inventory), Phase 2 (domain modeling with ground truth vs unknowns, assert-and-test pattern for YES/NO), Phase 3 (logic selection decision tree), Phase 4 (SMT-LIB encoding with uninterpreted function linking constraints), Phase 5 (self-verification checklist). Only change made: replaced `{enhanced_text}` placeholder with `{formal_text}` to match our variable naming. Function `get_extraction_prompt()` updated to use new prompt (detail_level parameter deprecated but kept for API compatibility).
