@@ -7,12 +7,12 @@ Uses embedding distance to verify semantic similarity ≥91%.
 import logging
 from typing import TYPE_CHECKING
 
-from src.shared.result import Result, Ok, Err
+from src.domain.exceptions import FormalizationError
 from src.domain.models import FormalizationResult
-from src.domain.exceptions import FormalizationError, LLMError, EmbeddingError
+from src.shared.result import Err, Ok, Result
 
 if TYPE_CHECKING:
-    from src.domain.protocols import LLMProvider, EmbeddingProvider, SemanticVerifier
+    from src.domain.protocols import EmbeddingProvider, LLMProvider, SemanticVerifier
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +22,14 @@ class FormalizationStep:
 
     def __init__(
         self,
-        llm_provider: 'LLMProvider',
-        embedding_provider: 'EmbeddingProvider',
-        verifier: 'SemanticVerifier',
+        llm_provider: "LLMProvider",
+        embedding_provider: "EmbeddingProvider",
+        verifier: "SemanticVerifier",
         threshold: float = 0.91,
         max_retries: int = 3,
         temp_start: float = 0.0,
         temp_step: float = 0.2,
-        skip_threshold: int = 20
+        skip_threshold: int = 20,
     ):
         """Initialize formalization step.
 
@@ -53,9 +53,7 @@ class FormalizationStep:
         self.skip_threshold = skip_threshold
 
     async def execute(
-        self,
-        informal_text: str,
-        force_skip: bool = False
+        self, informal_text: str, force_skip: bool = False
     ) -> Result[FormalizationResult, FormalizationError]:
         """Execute formalization with retry logic.
 
@@ -81,18 +79,19 @@ class FormalizationStep:
             skip_reason = "explicitly requested via API flag"
         elif self.skip_threshold > 0 and len(informal_text) < self.skip_threshold:
             should_skip = True
-            skip_reason = f"short input ({len(informal_text)} chars < {self.skip_threshold} threshold)"
+            skip_reason = (
+                f"short input ({len(informal_text)} chars < {self.skip_threshold} threshold)"
+            )
 
         if should_skip:
-            logger.info(
-                f"Skipping formalization: {skip_reason}. "
-                f"Treating as already formal."
+            logger.info(f"Skipping formalization: {skip_reason}. " f"Treating as already formal.")
+            return Ok(
+                FormalizationResult(
+                    formal_text=informal_text,
+                    similarity_score=1.0,  # Perfect similarity since it's unchanged
+                    attempts=0,  # No LLM calls needed
+                )
             )
-            return Ok(FormalizationResult(
-                formal_text=informal_text,
-                similarity_score=1.0,  # Perfect similarity since it's unchanged
-                attempts=0  # No LLM calls needed
-            ))
 
         try:
             # OPTIMIZATION: Compute source embedding ONCE
@@ -101,14 +100,15 @@ class FormalizationStep:
 
         except Exception as e:
             logger.error(f"Failed to compute source embedding: {e}")
-            return Err(FormalizationError(
-                message=f"Failed to compute source embedding: {str(e)}",
-                best_similarity=0.0,
-                attempts=0
-            ))
+            return Err(
+                FormalizationError(
+                    message=f"Failed to compute source embedding: {str(e)}",
+                    best_similarity=0.0,
+                    attempts=0,
+                )
+            )
 
         best_similarity = 0.0
-        best_formal_text = ""
         previous_attempt: str | None = None
         previous_similarity: float | None = None
 
@@ -129,7 +129,7 @@ class FormalizationStep:
                     informal_text,
                     temperature=temperature,
                     previous_attempt=previous_attempt,
-                    previous_similarity=previous_similarity
+                    previous_similarity=previous_similarity,
                 )
 
                 # Log the complete formalized text for debugging
@@ -142,10 +142,7 @@ class FormalizationStep:
                 embedding_formal = await self.embedding_provider.embed(formal_text)
 
                 # Calculate similarity
-                similarity = self.verifier.calculate_similarity(
-                    embedding_source,
-                    embedding_formal
-                )
+                similarity = self.verifier.calculate_similarity(embedding_source, embedding_formal)
 
                 logger.info(
                     f"Attempt {attempt + 1}: similarity={similarity:.4f} "
@@ -155,16 +152,17 @@ class FormalizationStep:
                 # Track best result
                 if similarity > best_similarity:
                     best_similarity = similarity
-                    best_formal_text = formal_text
 
                 # Check threshold
                 if similarity >= self.threshold:
                     logger.info(f"Formalization succeeded after {attempt + 1} attempts")
-                    return Ok(FormalizationResult(
-                        formal_text=formal_text,
-                        similarity_score=similarity,
-                        attempts=attempt + 1
-                    ))
+                    return Ok(
+                        FormalizationResult(
+                            formal_text=formal_text,
+                            similarity_score=similarity,
+                            attempts=attempt + 1,
+                        )
+                    )
 
                 # Save for next refinement iteration
                 previous_attempt = formal_text
@@ -179,11 +177,13 @@ class FormalizationStep:
             f"Formalization failed after {self.max_retries} attempts. "
             f"Best similarity: {best_similarity:.4f} (threshold: {self.threshold})"
         )
-        return Err(FormalizationError(
-            message=(
-                f"Failed to meet similarity threshold after {self.max_retries} attempts. "
-                f"Best similarity: {best_similarity:.4f}, Required: {self.threshold}"
-            ),
-            best_similarity=best_similarity,
-            attempts=self.max_retries
-        ))
+        return Err(
+            FormalizationError(
+                message=(
+                    f"Failed to meet similarity threshold after {self.max_retries} attempts. "
+                    f"Best similarity: {best_similarity:.4f}, Required: {self.threshold}"
+                ),
+                best_similarity=best_similarity,
+                attempts=self.max_retries,
+            )
+        )

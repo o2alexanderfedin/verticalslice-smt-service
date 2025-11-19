@@ -12,9 +12,7 @@ class EmbeddingDistanceVerifier:
     """Verifies semantic preservation using embedding distances."""
 
     def calculate_similarity(
-        self,
-        embedding1: npt.NDArray[np.float32],
-        embedding2: npt.NDArray[np.float32]
+        self, embedding1: npt.NDArray[np.float32], embedding2: npt.NDArray[np.float32]
     ) -> float:
         """Calculate cosine similarity between two embeddings.
 
@@ -36,9 +34,7 @@ class EmbeddingDistanceVerifier:
         return float(np.clip(similarity, 0.0, 1.0))
 
     def calculate_degradation(
-        self,
-        embedding_source: npt.NDArray[np.float32],
-        embedding_target: npt.NDArray[np.float32]
+        self, embedding_source: npt.NDArray[np.float32], embedding_target: npt.NDArray[np.float32]
     ) -> float:
         """Calculate information degradation between source and target.
 

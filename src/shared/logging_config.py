@@ -5,7 +5,6 @@ Sets up logging with appropriate format and handlers.
 
 import logging
 import sys
-from typing import Optional
 
 
 def configure_logging(level: str = "INFO") -> None:
@@ -22,9 +21,7 @@ def configure_logging(level: str = "INFO") -> None:
         level=numeric_level,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[
-            logging.StreamHandler(sys.stdout)
-        ]
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
     # Set specific loggers to reduce noise

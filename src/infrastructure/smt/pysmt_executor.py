@@ -3,12 +3,9 @@
 Uses pySMT library for solver-agnostic SMT-LIB execution.
 """
 
-import logging
 import asyncio
 import io
-from typing import Optional
-
-from src.domain.exceptions import SolverExecutionError
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +22,7 @@ class PysmtExecutor:
         self.solver_name = solver_name
         logger.info(f"Initialized pySMT executor with solver: {solver_name}")
 
-    async def execute(
-        self,
-        smt_code: str,
-        timeout: float = 30.0
-    ) -> dict:
+    async def execute(self, smt_code: str, timeout: float = 30.0) -> dict:
         """Execute SMT-LIB code and return results.
 
         Runs in thread pool to avoid blocking event loop.
@@ -53,14 +46,13 @@ class PysmtExecutor:
             # Run in thread pool
             loop = asyncio.get_event_loop()
             result = await asyncio.wait_for(
-                loop.run_in_executor(None, self._execute_sync, smt_code),
-                timeout=timeout
+                loop.run_in_executor(None, self._execute_sync, smt_code), timeout=timeout
             )
 
             logger.debug(f"Execution completed: {result['check_sat_result']}")
             return result
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(f"SMT execution timeout ({timeout}s)")
             return {
                 "success": False,
@@ -68,7 +60,7 @@ class PysmtExecutor:
                 "model": None,
                 "unsat_core": None,
                 "raw_output": f"Execution timed out after {timeout} seconds",
-                "error_message": f"Solver execution exceeded timeout of {timeout}s"
+                "error_message": f"Solver execution exceeded timeout of {timeout}s",
             }
 
         except Exception as e:
@@ -79,7 +71,7 @@ class PysmtExecutor:
                 "model": None,
                 "unsat_core": None,
                 "raw_output": str(e),
-                "error_message": str(e)
+                "error_message": str(e),
             }
 
     def _execute_sync(self, smt_code: str) -> dict:
@@ -92,9 +84,8 @@ class PysmtExecutor:
             Execution result dictionary
         """
         try:
+            from pysmt.shortcuts import Solver, get_unsat_core
             from pysmt.smtlib.parser import SmtLibParser
-            from pysmt.shortcuts import Solver, get_model, get_unsat_core
-            import pysmt.exceptions
 
             # Parse SMT-LIB code
             parser = SmtLibParser()
@@ -122,14 +113,14 @@ class PysmtExecutor:
                         "model": model_str,
                         "unsat_core": None,
                         "raw_output": f"sat\n{model_str}",
-                        "error_message": None
+                        "error_message": None,
                     }
                 else:
                     # Try to get unsat core (may not be supported by all solvers)
                     try:
                         core = get_unsat_core()
                         core_str = str(core) if core else "Unsat core not available"
-                    except:
+                    except Exception:
                         core_str = "Unsat core not supported by solver"
 
                     return {
@@ -138,7 +129,7 @@ class PysmtExecutor:
                         "model": None,
                         "unsat_core": core_str,
                         "raw_output": f"unsat\n{core_str}",
-                        "error_message": None
+                        "error_message": None,
                     }
 
         except Exception as e:
@@ -151,5 +142,5 @@ class PysmtExecutor:
                 "model": None,
                 "unsat_core": None,
                 "raw_output": error_msg,
-                "error_message": error_msg
+                "error_message": error_msg,
             }

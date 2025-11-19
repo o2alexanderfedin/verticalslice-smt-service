@@ -6,9 +6,9 @@ Executes SMT-LIB code with solver and fixes errors using LLM.
 import logging
 from typing import TYPE_CHECKING
 
-from src.shared.result import Result, Ok, Err
-from src.domain.models import SolverResult
 from src.domain.exceptions import ValidationError
+from src.domain.models import SolverResult
+from src.shared.result import Err, Ok, Result
 
 if TYPE_CHECKING:
     from src.domain.protocols import LLMProvider, SMTSolver
@@ -28,17 +28,17 @@ def _strip_markdown_fences(smt_code: str) -> str:
     Returns:
         Clean SMT code without fences
     """
-    lines = smt_code.strip().split('\n')
+    lines = smt_code.strip().split("\n")
 
     # Remove opening fence (```smt-lib, ```smtlib, or just ```)
-    if lines and lines[0].strip().startswith('```'):
+    if lines and lines[0].strip().startswith("```"):
         lines = lines[1:]
 
     # Remove closing fence (```)
-    if lines and lines[-1].strip() == '```':
+    if lines and lines[-1].strip() == "```":
         lines = lines[:-1]
 
-    return '\n'.join(lines).strip()
+    return "\n".join(lines).strip()
 
 
 class ValidationStep:
@@ -46,10 +46,10 @@ class ValidationStep:
 
     def __init__(
         self,
-        llm_provider: 'LLMProvider',
-        smt_solver: 'SMTSolver',
+        llm_provider: "LLMProvider",
+        smt_solver: "SMTSolver",
         max_retries: int = 3,
-        solver_timeout: float = 30.0
+        solver_timeout: float = 30.0,
     ):
         """Initialize validation step.
 
@@ -64,10 +64,7 @@ class ValidationStep:
         self.max_retries = max_retries
         self.solver_timeout = solver_timeout
 
-    async def execute(
-        self,
-        smt_code: str
-    ) -> Result[SolverResult, ValidationError]:
+    async def execute(self, smt_code: str) -> Result[SolverResult, ValidationError]:
         """Execute solver validation with error correction.
 
         Args:
@@ -87,16 +84,11 @@ class ValidationStep:
         last_error = ""
 
         for attempt in range(self.max_retries):
-            logger.debug(
-                f"Validation attempt {attempt + 1}/{self.max_retries}"
-            )
+            logger.debug(f"Validation attempt {attempt + 1}/{self.max_retries}")
 
             try:
                 # Execute SMT solver
-                result = await self.smt_solver.execute(
-                    current_code,
-                    timeout=self.solver_timeout
-                )
+                result = await self.smt_solver.execute(current_code, timeout=self.solver_timeout)
 
                 # Check if execution succeeded
                 if result["success"]:
@@ -104,28 +96,25 @@ class ValidationStep:
                         f"Validation succeeded after {attempt + 1} attempts. "
                         f"Result: {result['check_sat_result']}"
                     )
-                    return Ok(SolverResult(
-                        success=True,
-                        check_sat_result=result["check_sat_result"],
-                        model=result.get("model"),
-                        unsat_core=result.get("unsat_core"),
-                        raw_output=result["raw_output"],
-                        attempts=attempt + 1
-                    ))
+                    return Ok(
+                        SolverResult(
+                            success=True,
+                            check_sat_result=result["check_sat_result"],
+                            model=result.get("model"),
+                            unsat_core=result.get("unsat_core"),
+                            raw_output=result["raw_output"],
+                            attempts=attempt + 1,
+                        )
+                    )
 
                 # Execution failed - try to fix
                 last_error = result.get("error_message", "Unknown error")
-                logger.warning(
-                    f"Attempt {attempt + 1} failed with error: {last_error}"
-                )
+                logger.warning(f"Attempt {attempt + 1} failed with error: {last_error}")
 
                 if attempt < self.max_retries - 1:
                     # Use LLM to fix the error
                     logger.debug("Requesting LLM to fix SMT errors")
-                    fixed_code = await self.llm_provider.fix_smt_errors(
-                        current_code,
-                        last_error
-                    )
+                    fixed_code = await self.llm_provider.fix_smt_errors(current_code, last_error)
                     # Strip markdown fences from fixed code
                     current_code = _strip_markdown_fences(fixed_code)
                     logger.debug("Received fixed SMT code from LLM")
@@ -138,8 +127,7 @@ class ValidationStep:
                     # Try to fix
                     try:
                         fixed_code = await self.llm_provider.fix_smt_errors(
-                            current_code,
-                            last_error
+                            current_code, last_error
                         )
                         # Strip markdown fences from fixed code
                         current_code = _strip_markdown_fences(fixed_code)
@@ -149,14 +137,15 @@ class ValidationStep:
 
         # All retries exhausted
         logger.error(
-            f"Validation failed after {self.max_retries} attempts. "
-            f"Last error: {last_error}"
+            f"Validation failed after {self.max_retries} attempts. " f"Last error: {last_error}"
         )
-        return Err(ValidationError(
-            message=(
-                f"SMT solver validation failed after {self.max_retries} attempts. "
-                f"Last error: {last_error}"
-            ),
-            last_error=last_error,
-            attempts=self.max_retries
-        ))
+        return Err(
+            ValidationError(
+                message=(
+                    f"SMT solver validation failed after {self.max_retries} attempts. "
+                    f"Last error: {last_error}"
+                ),
+                last_error=last_error,
+                attempts=self.max_retries,
+            )
+        )

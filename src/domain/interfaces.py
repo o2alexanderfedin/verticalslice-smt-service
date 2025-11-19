@@ -16,7 +16,6 @@ import numpy.typing as npt
 
 from src.domain.models import SolverResult
 
-
 # ============================================================================
 # Embedding Provider Protocol
 # ============================================================================
@@ -77,7 +76,7 @@ class LLMProvider(Protocol):
         informal_text: str,
         temperature: float = 0.3,
         previous_attempt: str | None = None,
-        previous_similarity: float | None = None
+        previous_similarity: float | None = None,
     ) -> str:
         """
         Transform informal text to formal text.
@@ -98,9 +97,7 @@ class LLMProvider(Protocol):
         """
         ...
 
-    async def extract_to_smtlib(
-        self, formal_text: str, detail_level: float = 0.6
-    ) -> str:
+    async def extract_to_smtlib(self, formal_text: str, detail_level: float = 0.6) -> str:
         """
         Extract formal text to SMT-LIB code.
 
@@ -118,9 +115,7 @@ class LLMProvider(Protocol):
         """
         ...
 
-    async def fix_smt_errors(
-        self, smt_code: str, error_message: str
-    ) -> str:
+    async def fix_smt_errors(self, smt_code: str, error_message: str) -> str:
         """
         Fix SMT-LIB syntax errors while preserving annotations.
 

@@ -9,14 +9,13 @@ for handling transient API failures.
 """
 
 import logging
-from typing import Any
 
 import anthropic
 
 from src.infrastructure.llm.prompts import (
-    FORMALIZATION_PROMPT,
-    EXTRACTION_PROMPT,
     ERROR_FIXING_PROMPT,
+    EXTRACTION_PROMPT,
+    FORMALIZATION_PROMPT,
 )
 from src.shared.retry import retry_with_backoff
 
@@ -71,7 +70,7 @@ class AnthropicClient:
         informal_text: str,
         temperature: float = 0.3,
         previous_attempt: str | None = None,
-        previous_similarity: float | None = None
+        previous_similarity: float | None = None,
     ) -> str:
         """
         Transform informal text to formal text using Claude.
@@ -94,6 +93,7 @@ class AnthropicClient:
         """
         # Build conversation messages
         from anthropic.types import MessageParam
+
         messages: list[MessageParam] = []
 
         if previous_attempt is None:
@@ -164,7 +164,7 @@ Provide the revised formalization now (just the text, no explanation)."""
         formal_text: str,
         detail_level: float = 0.6,
         previous_attempt: str | None = None,
-        previous_degradation: float | None = None
+        previous_degradation: float | None = None,
     ) -> str:
         """
         Extract formal text to SMT-LIB code using Claude.
@@ -203,6 +203,7 @@ Provide the revised formalization now (just the text, no explanation)."""
         try:
             # Build conversation based on whether this is a retry
             from anthropic.types import MessageParam
+
             messages: list[MessageParam] = []
 
             if previous_attempt is None:
@@ -263,9 +264,7 @@ whatever is needed to reduce information loss and correctly represent the formal
         initial_delay=1.0,
         exceptions=(anthropic.APIError, anthropic.APITimeoutError),
     )
-    async def fix_smt_errors(
-        self, smt_code: str, error_message: str
-    ) -> str:
+    async def fix_smt_errors(self, smt_code: str, error_message: str) -> str:
         """
         Fix SMT-LIB syntax errors while preserving annotations.
 

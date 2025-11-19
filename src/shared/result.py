@@ -4,13 +4,13 @@ This module implements a Rust-style Result type that makes error handling
 explicit in type signatures without relying on exceptions for control flow.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Callable, Union
+from typing import Generic, TypeVar, Union
 
-
-T = TypeVar('T')  # Success type
-E = TypeVar('E', bound=Exception)  # Error type
-U = TypeVar('U')  # Map target type
+T = TypeVar("T")  # Success type
+E = TypeVar("E", bound=Exception)  # Error type
+U = TypeVar("U")  # Map target type
 
 
 @dataclass(frozen=True)
@@ -35,7 +35,7 @@ class Ok(Generic[T]):
         """Get the value or default (returns value because this is Ok)."""
         return self.value
 
-    def map(self, func: Callable[[T], U]) -> 'Result[U, E]':
+    def map(self, func: Callable[[T], U]) -> "Result[U, E]":
         """Transform the success value."""
         return Ok(func(self.value))
 
@@ -65,7 +65,7 @@ class Err(Generic[E]):
         """Get the value or default (returns default because this is Err)."""
         return default
 
-    def map(self, func: Callable[[T], U]) -> 'Result[U, E]':
+    def map(self, func: Callable[[T], U]) -> "Result[U, E]":
         """Transform the success value (does nothing for Err)."""
         return self  # type: ignore
 

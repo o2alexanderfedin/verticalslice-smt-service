@@ -11,7 +11,6 @@ to prevent blocking the async event loop.
 
 import asyncio
 import logging
-from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -94,9 +93,7 @@ class SentenceTransformerProvider:
             )
 
             logger.debug(
-                f"Embedding generated: "
-                f"shape={embedding.shape}, "
-                f"dtype={embedding.dtype}"
+                f"Embedding generated: " f"shape={embedding.shape}, " f"dtype={embedding.dtype}"
             )
 
             return embedding

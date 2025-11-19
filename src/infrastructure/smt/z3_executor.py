@@ -11,7 +11,6 @@ async execution without blocking the event loop.
 
 import asyncio
 import logging
-from typing import Optional
 
 from src.domain.models import SolverResult
 
@@ -74,8 +73,7 @@ class Z3Executor:
             RuntimeError: If Z3 process fails to start
         """
         logger.debug(
-            f"Executing Z3 with timeout={timeout_seconds}s, "
-            f"code_length={len(smt_lib_code)}"
+            f"Executing Z3 with timeout={timeout_seconds}s, " f"code_length={len(smt_lib_code)}"
         )
 
         try:
@@ -94,7 +92,7 @@ class Z3Executor:
                     process.communicate(smt_lib_code.encode("utf-8")),
                     timeout=timeout_seconds,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.error(f"Z3 execution timed out after {timeout_seconds}s")
                 process.kill()
                 await process.wait()
@@ -123,9 +121,7 @@ class Z3Executor:
                 )
 
             # Parse output
-            result = self._parse_output(
-                stdout, get_model=get_model, get_unsat_core=get_unsat_core
-            )
+            result = self._parse_output(stdout, get_model=get_model, get_unsat_core=get_unsat_core)
 
             logger.info(
                 f"Z3 execution complete: "
@@ -135,12 +131,12 @@ class Z3Executor:
 
             return result
 
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             logger.error(f"Z3 executable not found at: {self._z3_path}")
             raise RuntimeError(
                 f"Z3 executable not found at '{self._z3_path}'. "
                 "Please install Z3 or specify correct path."
-            )
+            ) from e
         except Exception as e:
             logger.error(f"Unexpected error executing Z3: {e}")
             raise RuntimeError(f"Failed to execute Z3: {e}") from e
@@ -195,12 +191,12 @@ class Z3Executor:
             )
 
         # Extract model if sat and requested
-        model: Optional[str] = None
+        model: str | None = None
         if check_sat_result == "sat" and get_model and len(lines) > 1:
             model = "\n".join(lines[1:]).strip()
 
         # Extract unsat-core if unsat and requested
-        unsat_core: Optional[str] = None
+        unsat_core: str | None = None
         if check_sat_result == "unsat" and get_unsat_core and len(lines) > 1:
             unsat_core = "\n".join(lines[1:]).strip()
 

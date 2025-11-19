@@ -4,12 +4,13 @@ Entry point for the SMT-LIB pipeline service.
 """
 
 import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from src.api.routes import pipeline
 from src.api.dependencies import get_settings
+from src.api.routes import pipeline
 from src.shared.logging_config import configure_logging
 
 # Configure logging
@@ -109,13 +110,10 @@ For issues, questions, or feature requests, please refer to the project reposito
     openapi_tags=[
         {
             "name": "Pipeline Processing",
-            "description": "Core pipeline endpoints for processing informal text to SMT-LIB code"
+            "description": "Core pipeline endpoints for processing informal text to SMT-LIB code",
         },
-        {
-            "name": "Health & Status",
-            "description": "Service health check and status endpoints"
-        }
-    ]
+        {"name": "Health & Status", "description": "Service health check and status endpoints"},
+    ],
 )
 
 # Configure CORS
@@ -179,13 +177,13 @@ async def root():
                         "service": "Semantic-Preserving SMT-LIB Pipeline",
                         "version": "0.1.0",
                         "model": "claude-sonnet-4-5-20250929",
-                        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+                        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
                     }
                 }
-            }
+            },
         }
     },
-    tags=["Health & Status"]
+    tags=["Health & Status"],
 )
 async def health_check():
     """Service health check endpoint.
@@ -201,7 +199,7 @@ async def health_check():
         "service": settings.api_title,
         "version": settings.api_version,
         "model": settings.anthropic_model,
-        "embedding_model": settings.embedding_model_name
+        "embedding_model": settings.embedding_model_name,
     }
 
 
@@ -223,9 +221,5 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "src.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level=settings.log_level.lower()
+        "src.main:app", host="0.0.0.0", port=8000, reload=True, log_level=settings.log_level.lower()
     )

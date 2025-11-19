@@ -5,6 +5,7 @@ Following the Dependency Inversion Principle: domain depends on abstractions, no
 """
 
 from typing import Any, Protocol
+
 import numpy as np
 import numpy.typing as npt
 
@@ -35,7 +36,7 @@ class LLMProvider(Protocol):
         informal_text: str,
         temperature: float,
         previous_attempt: str | None = None,
-        previous_similarity: float | None = None
+        previous_similarity: float | None = None,
     ) -> str:
         """Convert informal text to formal text while preserving semantics.
 
@@ -58,7 +59,7 @@ class LLMProvider(Protocol):
         formal_text: str,
         detail_level: float,
         previous_attempt: str | None = None,
-        previous_degradation: float | None = None
+        previous_degradation: float | None = None,
     ) -> str:
         """Extract SMT-LIB code from formalized text with annotations.
 
@@ -95,11 +96,7 @@ class LLMProvider(Protocol):
 class SMTSolver(Protocol):
     """Protocol for SMT solver execution."""
 
-    async def execute(
-        self,
-        smt_code: str,
-        timeout: float = 30.0
-    ) -> dict[str, Any]:
+    async def execute(self, smt_code: str, timeout: float = 30.0) -> dict[str, Any]:
         """Execute SMT-LIB code and return results.
 
         Args:
@@ -125,9 +122,7 @@ class SemanticVerifier(Protocol):
     """Protocol for semantic verification using embeddings."""
 
     def calculate_similarity(
-        self,
-        embedding1: npt.NDArray[np.float32],
-        embedding2: npt.NDArray[np.float32]
+        self, embedding1: npt.NDArray[np.float32], embedding2: npt.NDArray[np.float32]
     ) -> float:
         """Calculate cosine similarity between two embeddings.
 
@@ -141,9 +136,7 @@ class SemanticVerifier(Protocol):
         ...
 
     def calculate_degradation(
-        self,
-        embedding_source: npt.NDArray[np.float32],
-        embedding_target: npt.NDArray[np.float32]
+        self, embedding_source: npt.NDArray[np.float32], embedding_target: npt.NDArray[np.float32]
     ) -> float:
         """Calculate information degradation between source and target.
 

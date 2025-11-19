@@ -7,8 +7,9 @@ backoff on transient failures. Used for API calls and external service integrati
 
 import asyncio
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, TypeVar, ParamSpec, Any
+from typing import ParamSpec, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -60,16 +61,11 @@ def retry_with_backoff(
                     last_exception = e
 
                     if attempt == max_retries:
-                        logger.error(
-                            f"{func.__name__} failed after {max_retries} retries: {e}"
-                        )
+                        logger.error(f"{func.__name__} failed after {max_retries} retries: {e}")
                         raise
 
                     # Calculate exponential backoff delay
-                    delay = min(
-                        initial_delay * (exponential_base ** attempt),
-                        max_delay
-                    )
+                    delay = min(initial_delay * (exponential_base**attempt), max_delay)
 
                     logger.warning(
                         f"{func.__name__} attempt {attempt + 1}/{max_retries + 1} failed: {e}. "

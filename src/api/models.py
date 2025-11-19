@@ -3,8 +3,8 @@
 Separate from domain models to allow different validation rules.
 """
 
+
 from pydantic import BaseModel, Field
-from typing import Optional
 
 from src.domain.models import PipelineMetrics, VerifiedOutput
 
@@ -33,8 +33,8 @@ class ProcessRequest(BaseModel):
         examples=[
             "x must be greater than 5 and less than 10",
             "the sum of a and b must equal 10",
-            "if x is even then y must be odd"
-        ]
+            "if x is even then y must be odd",
+        ],
     )
 
     skip_formalization: bool = Field(
@@ -44,25 +44,16 @@ class ProcessRequest(BaseModel):
             "Useful for simple expressions like 'x > 5' that don't need LLM processing. "
             "The service automatically skips formalization for very short inputs, "
             "but this flag allows explicit control."
-        )
+        ),
     )
 
     model_config = {
         "json_schema_extra": {
             "examples": [
-                {
-                    "informal_text": "x must be greater than 5 and less than 10"
-                },
-                {
-                    "informal_text": "the sum of a and b must equal 10"
-                },
-                {
-                    "informal_text": "if x is positive then y must be negative"
-                },
-                {
-                    "informal_text": "x > 5",
-                    "skip_formalization": True
-                }
+                {"informal_text": "x must be greater than 5 and less than 10"},
+                {"informal_text": "the sum of a and b must equal 10"},
+                {"informal_text": "if x is positive then y must be negative"},
+                {"informal_text": "x > 5", "skip_formalization": True},
             ]
         }
     }
@@ -88,7 +79,7 @@ class ProcessResponse(BaseModel):
             "This text maintains the same meaning but uses more precise, structured language "
             "suitable for further processing."
         ),
-        examples=["The integer variable x must satisfy the constraint: x > 5 AND x < 10"]
+        examples=["The integer variable x must satisfy the constraint: x > 5 AND x < 10"],
     )
     formalization_similarity: float = Field(
         ge=0.0,
@@ -99,7 +90,7 @@ class ProcessResponse(BaseModel):
             "Threshold: ≥0.91 required for acceptance. "
             "Range: 0.0 (completely different) to 1.0 (semantically identical)."
         ),
-        examples=[0.95]
+        examples=[0.95],
     )
 
     # Step 2 output: SMT-LIB Extraction
@@ -111,7 +102,7 @@ class ProcessResponse(BaseModel):
         ),
         examples=[
             "(declare-const x Int)\n(assert (> x 5))\n(assert (< x 10))\n(check-sat)\n(get-model)"
-        ]
+        ],
     )
     extraction_degradation: float = Field(
         ge=0.0,
@@ -122,7 +113,7 @@ class ProcessResponse(BaseModel):
             "Threshold: ≤0.05 required for acceptance. "
             "Range: 0.0 (no information lost) to 1.0 (complete information loss)."
         ),
-        examples=[0.03]
+        examples=[0.03],
     )
 
     # Step 3 output: Solver Validation
@@ -134,9 +125,9 @@ class ProcessResponse(BaseModel):
             "'unknown' (solver could not determine), "
             "or an error message if execution failed."
         ),
-        examples=["sat"]
+        examples=["sat"],
     )
-    model: Optional[str] = Field(
+    model: str | None = Field(
         default=None,
         description=(
             "Model (variable assignments) from solver if check-sat returned 'sat'. "
@@ -144,9 +135,9 @@ class ProcessResponse(BaseModel):
             "Example: '((x 7))' means x=7 satisfies the constraints. "
             "None if result was 'unsat' or 'unknown'."
         ),
-        examples=["((x 7))"]
+        examples=["((x 7))"],
     )
-    unsat_core: Optional[str] = Field(
+    unsat_core: str | None = Field(
         default=None,
         description=(
             "Minimal unsatisfiable core from solver if check-sat returned 'unsat'. "
@@ -154,7 +145,7 @@ class ProcessResponse(BaseModel):
             "Useful for debugging why no solution exists. "
             "None if result was 'sat' or 'unknown'."
         ),
-        examples=None
+        examples=None,
     )
     solver_success: bool = Field(
         description=(
@@ -162,7 +153,7 @@ class ProcessResponse(BaseModel):
             "True means the solver ran and produced a valid result (sat/unsat/unknown). "
             "False means there were execution errors (syntax errors, timeouts, etc.)."
         ),
-        examples=[True]
+        examples=[True],
     )
 
     # Metrics
@@ -182,7 +173,7 @@ class ProcessResponse(BaseModel):
             "and solver executed successfully. "
             "False means at least one threshold was not met (though processing may have continued)."
         ),
-        examples=[True]
+        examples=[True],
     )
     requires_manual_review: bool = Field(
         description=(
@@ -191,7 +182,7 @@ class ProcessResponse(BaseModel):
             "multiple retry attempts were needed, or other risk indicators are present. "
             "True does not mean the output is incorrect, just that extra caution is advised."
         ),
-        examples=[False]
+        examples=[False],
     )
 
     model_config = {
@@ -217,10 +208,10 @@ class ProcessResponse(BaseModel):
                         "validation_attempts": 1,
                         "solver_execution_time_seconds": 0.3,
                         "total_time_seconds": 3.0,
-                        "success": True
+                        "success": True,
                     },
                     "passed_all_checks": True,
-                    "requires_manual_review": False
+                    "requires_manual_review": False,
                 }
             ]
         }
@@ -248,7 +239,7 @@ class ProcessResponse(BaseModel):
             solver_success=output.solver_success,
             metrics=output.metrics,
             passed_all_checks=output.passed_all_checks,
-            requires_manual_review=output.requires_manual_review
+            requires_manual_review=output.requires_manual_review,
         )
 
 
@@ -268,10 +259,10 @@ class ErrorResponse(BaseModel):
         examples=[
             "Formalization failed: Could not achieve required similarity threshold (0.89 < 0.91)",
             "Extraction failed: Information degradation too high (0.08 > 0.05)",
-            "Validation failed: SMT solver execution error - syntax error on line 3"
-        ]
+            "Validation failed: SMT solver execution error - syntax error on line 3",
+        ],
     )
-    details: Optional[dict] = Field(
+    details: dict | None = Field(
         default=None,
         description=(
             "Additional structured error details for debugging. "
@@ -279,13 +270,8 @@ class ErrorResponse(BaseModel):
             "Not always present - only included when relevant context is available."
         ),
         examples=[
-            {
-                "step": "formalization",
-                "attempts": 3,
-                "final_similarity": 0.89,
-                "threshold": 0.91
-            }
-        ]
+            {"step": "formalization", "attempts": 3, "final_similarity": 0.89, "threshold": 0.91}
+        ],
     )
 
     model_config = {
@@ -297,16 +283,16 @@ class ErrorResponse(BaseModel):
                         "step": "formalization",
                         "attempts": 3,
                         "final_similarity": 0.89,
-                        "threshold": 0.91
-                    }
+                        "threshold": 0.91,
+                    },
                 },
                 {
                     "error": "Validation failed: SMT solver syntax error",
                     "details": {
                         "step": "validation",
-                        "solver_output": "Parse error at line 3: unexpected token ','"
-                    }
-                }
+                        "solver_output": "Parse error at line 3: unexpected token ','",
+                    },
+                },
             ]
         }
     }

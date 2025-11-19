@@ -154,7 +154,4 @@ def get_error_fixing_prompt(smt_code: str, error_message: str) -> str:
     Returns:
         Complete prompt for error fixing
     """
-    return ERROR_FIXING_PROMPT.format(
-        smt_code=smt_code,
-        error_message=error_message
-    )
+    return ERROR_FIXING_PROMPT.format(smt_code=smt_code, error_message=error_message)

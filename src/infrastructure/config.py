@@ -78,9 +78,7 @@ class Settings(BaseSettings):
     """
 
     # Anthropic LLM configuration
-    anthropic_api_key: str = Field(
-        description="Anthropic API key for Claude LLM calls"
-    )
+    anthropic_api_key: str = Field(description="Anthropic API key for Claude LLM calls")
     anthropic_model: str = Field(
         default="claude-sonnet-4-5-20250929",
         description="Claude model identifier",

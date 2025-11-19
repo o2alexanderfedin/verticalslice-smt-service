@@ -6,6 +6,7 @@ These exceptions represent business logic failures, not infrastructure errors.
 
 class PipelineError(Exception):
     """Base exception for all pipeline errors."""
+
     pass
 
 
@@ -38,14 +39,17 @@ class ValidationError(PipelineError):
 
 class LLMError(PipelineError):
     """Raised when LLM provider encounters an error."""
+
     pass
 
 
 class EmbeddingError(PipelineError):
     """Raised when embedding provider encounters an error."""
+
     pass
 
 
 class SolverExecutionError(PipelineError):
     """Raised when SMT solver execution fails."""
+
     pass

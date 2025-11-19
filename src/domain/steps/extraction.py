@@ -7,12 +7,12 @@ Uses embedding distance to verify degradation ≤5%.
 import logging
 from typing import TYPE_CHECKING
 
-from src.shared.result import Result, Ok, Err
-from src.domain.models import ExtractionResult
 from src.domain.exceptions import ExtractionError
+from src.domain.models import ExtractionResult
+from src.shared.result import Err, Ok, Result
 
 if TYPE_CHECKING:
-    from src.domain.protocols import LLMProvider, EmbeddingProvider, SemanticVerifier
+    from src.domain.protocols import EmbeddingProvider, LLMProvider, SemanticVerifier
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +22,14 @@ class ExtractionStep:
 
     def __init__(
         self,
-        llm_provider: 'LLMProvider',
-        embedding_provider: 'EmbeddingProvider',
-        verifier: 'SemanticVerifier',
+        llm_provider: "LLMProvider",
+        embedding_provider: "EmbeddingProvider",
+        verifier: "SemanticVerifier",
         max_degradation: float = 0.05,
         max_retries: int = 5,
         detail_start: float = 0.5,
         detail_step: float = 0.1,
-        skip_retries_threshold: int = 50
+        skip_retries_threshold: int = 50,
     ):
         """Initialize extraction step.
 
@@ -52,10 +52,7 @@ class ExtractionStep:
         self.detail_step = detail_step
         self.skip_retries_threshold = skip_retries_threshold
 
-    async def execute(
-        self,
-        formal_text: str
-    ) -> Result[ExtractionResult, ExtractionError]:
+    async def execute(self, formal_text: str) -> Result[ExtractionResult, ExtractionError]:
         """Execute extraction with retry logic.
 
         CRITICAL OPTIMIZATION: Compute formal text embedding ONCE before loop,
@@ -77,17 +74,18 @@ class ExtractionStep:
 
         except Exception as e:
             logger.error(f"Failed to compute formal text embedding: {e}")
-            return Err(ExtractionError(
-                message=f"Failed to compute formal text embedding: {str(e)}",
-                best_degradation=1.0,
-                attempts=0
-            ))
+            return Err(
+                ExtractionError(
+                    message=f"Failed to compute formal text embedding: {str(e)}",
+                    best_degradation=1.0,
+                    attempts=0,
+                )
+            )
 
         # OPTIMIZATION: Skip retries for short formal texts
         # Short, simple texts should get correct SMT-LIB on first attempt with 5-phase prompt
         skip_retries = (
-            self.skip_retries_threshold > 0 and
-            len(formal_text) < self.skip_retries_threshold
+            self.skip_retries_threshold > 0 and len(formal_text) < self.skip_retries_threshold
         )
 
         if skip_retries:
@@ -97,7 +95,6 @@ class ExtractionStep:
             )
 
         best_degradation = 1.0
-        best_smt_code = ""
         previous_attempt: str | None = None
         previous_degradation: float | None = None
 
@@ -122,17 +119,14 @@ class ExtractionStep:
                     formal_text,
                     detail_level=detail_level,
                     previous_attempt=previous_attempt,
-                    previous_degradation=previous_degradation
+                    previous_degradation=previous_degradation,
                 )
 
                 # Compute embedding for SMT code (only new embedding needed)
                 embedding_smt = await self.embedding_provider.embed(smt_code)
 
                 # Calculate degradation
-                degradation = self.verifier.calculate_degradation(
-                    embedding_formal,
-                    embedding_smt
-                )
+                degradation = self.verifier.calculate_degradation(embedding_formal, embedding_smt)
 
                 logger.info(
                     f"Attempt {attempt + 1}: degradation={degradation:.4f} "
@@ -142,7 +136,6 @@ class ExtractionStep:
                 # Track best result
                 if degradation < best_degradation:
                     best_degradation = degradation
-                    best_smt_code = smt_code
 
                 # Check threshold (or accept if skipping retries)
                 if degradation <= self.max_degradation or skip_retries:
@@ -153,11 +146,11 @@ class ExtractionStep:
                         )
                     else:
                         logger.info(f"Extraction succeeded after {attempt + 1} attempts")
-                    return Ok(ExtractionResult(
-                        smt_lib_code=smt_code,
-                        degradation=degradation,
-                        attempts=attempt + 1
-                    ))
+                    return Ok(
+                        ExtractionResult(
+                            smt_lib_code=smt_code, degradation=degradation, attempts=attempt + 1
+                        )
+                    )
 
                 # Save for next refinement iteration
                 previous_attempt = smt_code
@@ -172,11 +165,13 @@ class ExtractionStep:
             f"Extraction failed after {max_attempts} attempts. "
             f"Best degradation: {best_degradation:.4f} (max: {self.max_degradation})"
         )
-        return Err(ExtractionError(
-            message=(
-                f"Failed to meet degradation threshold after {max_attempts} attempts. "
-                f"Best degradation: {best_degradation:.4f}, Max allowed: {self.max_degradation}"
-            ),
-            best_degradation=best_degradation,
-            attempts=max_attempts
-        ))
+        return Err(
+            ExtractionError(
+                message=(
+                    f"Failed to meet degradation threshold after {max_attempts} attempts. "
+                    f"Best degradation: {best_degradation:.4f}, Max allowed: {self.max_degradation}"
+                ),
+                best_degradation=best_degradation,
+                attempts=max_attempts,
+            )
+        )
