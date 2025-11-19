@@ -1,8 +1,8 @@
 # TO-DOS
 
-## Install Missing pySMT Dependency - 2025-11-18 23:03
+## ✅ COMPLETED: Install pySMT Dependencies and Fix Integration - 2025-11-18 23:15
 
-- **Install pySMT package for SMT solver validation** - Step 3 (validation) fails with "No module named 'pysmt'" error. **Problem:** Logs show "pySMT execution error: No module named 'pysmt'" when trying to validate generated SMT-LIB code with Z3 solver. The pySMT executor is initialized successfully but fails when actually executing code. **Files:** `src/infrastructure/smt/pysmt_executor.py` (uses pySMT library), `requirements.txt` or `pyproject.toml` (missing pySMT dependency). **Solution:** Add pySMT to project dependencies and install it. Check if requirements.txt or pyproject.toml exists and add `pysmt` package. Run `pip install pysmt` or equivalent package manager command. Verify Z3 solver backend is also installed (pySMT may need `pysmt-z3` or similar).
+- **DONE: Installed pySMT and Z3 solver, fixed executor and validation step** - Complete pySMT integration with multiple bug fixes. **Implementation:** (1) Added `pysmt>=0.9.5` and `z3-solver==4.13.0.0` to requirements.txt and installed both packages. (2) Fixed `PysmtExecutor.execute()` at line 107 - removed invalid `logic="ALL"` parameter causing "error: ALL" failures, now letting pySMT auto-detect logic from formula. (3) Added `_strip_markdown_fences()` helper to `validation.py` that removes ```smt-lib...``` and ```...``` code fences from LLM-generated code. (4) Applied fence stripping to initial SMT code and all LLM-fixed code. (5) Fixed `PipelineMetrics.formalization_attempts` validation from `ge=1` to `ge=0` to allow skip cases. **Verification:** Full pipeline now works end-to-end for "x > 5" input: formalization skipped (0 attempts, 0s), extraction succeeds (1 attempt, 9.8s, degradation=0.74), validation executes (1 attempt, 0.15s, result=sat, model: x := 6). Total time ~10s. All prior optimizations working: skip thresholds, temperature=0.0, conversation refinement, markdown handling.
 
 ## ✅ COMPLETED: Fix Extraction Skip Logic - Accept First Attempt - 2025-11-18 22:58
 
