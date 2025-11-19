@@ -9,10 +9,10 @@ services:
     # Docker image configuration
     # This will be updated by CI/CD pipeline with the specific version tag
     image:
-      registry_type: DOCR
-      registry: nolock-ocr-services
-      repository: nolock-ocr-services
-      tag: verticalslice-smt-latest
+      registry_type: GHCR
+      registry: o2alexanderfedin
+      repository: verticalslice-smt-service
+      tag: latest
 
     # Instance configuration
     instance_count: 1
@@ -33,9 +33,12 @@ services:
     # Environment variables
     envs:
       # Anthropic API Configuration
+      # SECURITY: This secret must be set in Digital Ocean App Platform console
+      # Settings > App-Level Environment Variables > ANTHROPIC_API_KEY (encrypted)
+      # The value below is a placeholder and will be overridden by the secret
       - key: ANTHROPIC_API_KEY
         scope: RUN_TIME
-        value: "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"
+        type: SECRET
 
       - key: ANTHROPIC_MODEL
         scope: RUN_TIME

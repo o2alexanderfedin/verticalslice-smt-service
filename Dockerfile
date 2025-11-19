@@ -1,7 +1,9 @@
 # ===========================
 # Stage 1: Builder
 # ===========================
-FROM python:3.11-slim AS builder
+# Specify platform for Digital Ocean App Platform compatibility (linux/amd64 only)
+# This ensures correct architecture on ARM Macs and in CI/CD
+FROM --platform=linux/amd64 python:3.11-slim AS builder
 
 # Install build dependencies and Z3 solver
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -29,7 +31,8 @@ RUN python -c "from sentence_transformers import SentenceTransformer; \
 # ===========================
 # Stage 2: Runtime
 # ===========================
-FROM python:3.11-slim
+# Specify platform for Digital Ocean App Platform compatibility (linux/amd64 only)
+FROM --platform=linux/amd64 python:3.11-slim
 
 # Install runtime dependencies only
 # libgomp1: Required for PyTorch/sentence-transformers
