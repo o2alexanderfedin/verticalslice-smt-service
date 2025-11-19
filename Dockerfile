@@ -20,6 +20,12 @@ WORKDIR /build
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
+
+# Install CPU-only PyTorch first to avoid downloading 3GB+ CUDA libraries
+# This is critical for GitHub Actions runners with limited disk space
+RUN pip install --no-cache-dir --user torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining dependencies (torch already satisfied from CPU-only install)
 RUN pip install --no-cache-dir --user -r requirements.txt
 
 # Pre-download sentence-transformers model to avoid runtime download
