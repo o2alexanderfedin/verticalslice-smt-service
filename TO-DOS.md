@@ -1,5 +1,9 @@
 # TO-DOS
 
+## ✅ COMPLETED: Enforce Zero Temperature for Extraction - 2025-11-18 22:19
+
+- **DONE: Verified and documented extraction temperature stays at 0.0** - Confirmed extraction uses deterministic temperature (0.0) for all attempts with no variations. **Verification:** (1) Temperature hardcoded to 0.0 in `src/infrastructure/llm/client.py:238`, (2) No extraction temperature settings exist in `src/shared/config.py`, (3) Retry loop in `src/domain/steps/extraction.py` does not pass temperature parameter - only detail_level varies. **Documentation added:** Added CRITICAL warning in extract_to_smtlib docstring emphasizing temperature is non-configurable by design, expanded inline comment to 3-line warning at temperature=0.0 assignment, added NOTE in retry loop documenting temperature stays constant across all attempts. **Rationale:** Unlike formalization, extraction must be deterministic to ensure consistent, reproducible SMT-LIB output.
+
 ## ✅ COMPLETED: Fix Extraction Refinement Prompt - Allow Logic Changes - 2025-11-18 22:33
 
 - **DONE: Removed misleading constraint from extraction refinement prompt** - Removed "Keep the same SMT-LIB logic" from refinement prompt which could prevent fixing incorrect or incomplete logic. **Implementation:** Rewrote refinement prompt in `src/infrastructure/llm/client.py:215-230` to explicitly allow and encourage logic changes. New prompt includes 6-step checklist: (1) review if logic captures ALL constraints, (2) check for missing constraints, (3) verify variable declarations, (4) fix logical errors, (5) add detailed comments, (6) include variable context. Emphasizes that LLM should change logic AND/OR annotations as needed. **Rationale:** Degradation measures embedding similarity - if logic is wrong, comments won't fix it. Previous prompt was counterproductive by restricting changes to annotations only.
