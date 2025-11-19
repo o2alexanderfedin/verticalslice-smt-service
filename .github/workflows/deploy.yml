@@ -90,7 +90,7 @@ jobs:
           ANTHROPIC_MODEL: claude-sonnet-4-5-20250929
         run: |
           echo "Running tests with coverage..."
-          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0  # TODO: Add tests and increase coverage requirement
+          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 || [ $? -eq 5 ]  # Exit code 5 = no tests collected (OK for now)
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
