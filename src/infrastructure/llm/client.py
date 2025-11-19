@@ -217,13 +217,16 @@ Provide the revised formalization now (just the text, no explanation)."""
 
 This means too much semantic information was lost when converting to SMT-LIB.
 
-Please revise the SMT-LIB code to preserve MORE information from the formal text:
-- Add more detailed comments explaining the constraints
-- Include context about variable meanings and relationships
-- Preserve any semantic nuances from the formal text
-- Ensure all assertions clearly map back to the original requirements
+Please revise the SMT-LIB code to better match the formal text. You should:
+1. Review if the logic correctly captures ALL constraints from the formal text
+2. Check if any constraints are missing or incomplete
+3. Verify all variable declarations match the problem domain
+4. Fix any logical errors or incomplete assertions
+5. Add detailed comments explaining the constraints
+6. Include context about variable meanings and relationships
 
-Keep the same SMT-LIB logic, but enhance annotations to reduce information loss."""
+You may need to change the SMT-LIB logic itself, add missing constraints, or enhance annotations -
+whatever is needed to reduce information loss and correctly represent the formal text."""
                 messages.append({"role": "user", "content": refinement_prompt})
 
             message = await self._client.messages.create(
