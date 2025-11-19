@@ -3,7 +3,6 @@
 Separate from domain models to allow different validation rules.
 """
 
-
 from pydantic import BaseModel, Field
 
 from src.domain.models import PipelineMetrics, VerifiedOutput
