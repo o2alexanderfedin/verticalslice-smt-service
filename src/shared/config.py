@@ -113,6 +113,12 @@ class Settings(BaseSettings):
         le=0.5,
         description="Detail level increase per retry for extraction"
     )
+    extraction_skip_retries_threshold: int = Field(
+        default=50,
+        ge=0,
+        le=200,
+        description="Skip extraction retries for formal texts shorter than this (in characters, 0=never skip)"
+    )
 
     # Manual Review Triggers
     manual_review_high_retry_threshold: int = Field(

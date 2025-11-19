@@ -28,7 +28,8 @@ class ExtractionStep:
         max_degradation: float = 0.05,
         max_retries: int = 5,
         detail_start: float = 0.5,
-        detail_step: float = 0.1
+        detail_step: float = 0.1,
+        skip_retries_threshold: int = 50
     ):
         """Initialize extraction step.
 
@@ -40,6 +41,7 @@ class ExtractionStep:
             max_retries: Maximum retry attempts (default 5)
             detail_start: Starting detail level (default 0.5)
             detail_step: Detail level increase per retry (default 0.1)
+            skip_retries_threshold: Skip retries for texts shorter than this (default 50)
         """
         self.llm_provider = llm_provider
         self.embedding_provider = embedding_provider
@@ -48,6 +50,7 @@ class ExtractionStep:
         self.max_retries = max_retries
         self.detail_start = detail_start
         self.detail_step = detail_step
+        self.skip_retries_threshold = skip_retries_threshold
 
     async def execute(
         self,
@@ -80,6 +83,19 @@ class ExtractionStep:
                 attempts=0
             ))
 
+        # OPTIMIZATION: Skip retries for short formal texts
+        # Short, simple texts should get correct SMT-LIB on first attempt with 5-phase prompt
+        skip_retries = (
+            self.skip_retries_threshold > 0 and
+            len(formal_text) < self.skip_retries_threshold
+        )
+
+        if skip_retries:
+            logger.info(
+                f"Short formal text ({len(formal_text)} chars < {self.skip_retries_threshold} threshold). "
+                f"Will accept first extraction attempt without retries."
+            )
+
         best_degradation = 1.0
         best_smt_code = ""
         previous_attempt: str | None = None
@@ -88,14 +104,16 @@ class ExtractionStep:
         # Retry loop with conversation-based refinement
         # NOTE: Temperature is NOT varied here - it stays at 0.0 for all attempts
         # (hardcoded in LLM client for deterministic code generation)
-        for attempt in range(self.max_retries):
+        max_attempts = 1 if skip_retries else self.max_retries
+        for attempt in range(max_attempts):
             # Increase detail level on each attempt (for logging purposes)
             detail_level = min(1.0, self.detail_start + attempt * self.detail_step)
 
             logger.debug(
-                f"Extraction attempt {attempt + 1}/{self.max_retries} "
+                f"Extraction attempt {attempt + 1}/{max_attempts} "
                 f"(detail_level={detail_level:.2f}, "
-                f"mode={'refinement' if previous_attempt else 'first_attempt'})"
+                f"mode={'refinement' if previous_attempt else 'first_attempt'}, "
+                f"skip_retries={skip_retries})"
             )
 
             try:

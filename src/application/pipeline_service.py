@@ -116,7 +116,8 @@ class PipelineService:
             max_degradation=self.settings.extraction_max_degradation,
             max_retries=self.settings.extraction_max_retries,
             detail_start=self.settings.extraction_detail_start,
-            detail_step=self.settings.extraction_detail_step
+            detail_step=self.settings.extraction_detail_step,
+            skip_retries_threshold=self.settings.extraction_skip_retries_threshold
         )
 
         extraction_result = await extraction_step.execute(formal_text)
