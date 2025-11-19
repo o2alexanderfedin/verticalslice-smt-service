@@ -144,9 +144,15 @@ class ExtractionStep:
                     best_degradation = degradation
                     best_smt_code = smt_code
 
-                # Check threshold
-                if degradation <= self.max_degradation:
-                    logger.info(f"Extraction succeeded after {attempt + 1} attempts")
+                # Check threshold (or accept if skipping retries)
+                if degradation <= self.max_degradation or skip_retries:
+                    if skip_retries:
+                        logger.info(
+                            f"Extraction succeeded after {attempt + 1} attempt "
+                            f"(skip_retries=True, degradation={degradation:.4f} accepted without quality check)"
+                        )
+                    else:
+                        logger.info(f"Extraction succeeded after {attempt + 1} attempts")
                     return Ok(ExtractionResult(
                         smt_lib_code=smt_code,
                         degradation=degradation,
@@ -163,14 +169,14 @@ class ExtractionStep:
 
         # All retries exhausted
         logger.warning(
-            f"Extraction failed after {self.max_retries} attempts. "
+            f"Extraction failed after {max_attempts} attempts. "
             f"Best degradation: {best_degradation:.4f} (max: {self.max_degradation})"
         )
         return Err(ExtractionError(
             message=(
-                f"Failed to meet degradation threshold after {self.max_retries} attempts. "
+                f"Failed to meet degradation threshold after {max_attempts} attempts. "
                 f"Best degradation: {best_degradation:.4f}, Max allowed: {self.max_degradation}"
             ),
             best_degradation=best_degradation,
-            attempts=self.max_retries
+            attempts=max_attempts
         ))
