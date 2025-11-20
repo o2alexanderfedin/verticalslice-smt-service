@@ -55,3 +55,11 @@
       df -h
   ```
 
+## Verify NVIDIA GPU Libraries Not Installed - 2025-11-19 17:47
+
+- **Verify CPU-only PyTorch fix prevents NVIDIA downloads** - Confirm the CI/CD workflow no longer downloads nvidia_cublas_cu12, nvidia_cudnn_cu12, etc. **Problem:** Despite adding CPU-only PyTorch index to workflow, NVIDIA CUDA libraries may still be downloaded via sentence-transformers or other dependencies. The fix in commit c78c633 needs verification. **Files:** `.github/workflows/deploy.yml:42-44,91-93,148-150`, `requirements.txt:23-24`. **Solution:** Check v1.8.7 workflow logs for NVIDIA package downloads. If still present, investigate sentence-transformers dependencies or add explicit exclusion. May need to pin torch version or use `--no-deps` for sentence-transformers.
+
+## Verify v1.8.8 CLAUDE_CODE_OAUTH_TOKEN Fix Deployment - 2025-11-20 13:09
+
+- **Set CLAUDE_CODE_OAUTH_TOKEN secret in DO and verify deployment** - v1.8.8 switches from ANTHROPIC_API_KEY to CLAUDE_CODE_OAUTH_TOKEN. **Problem:** All deployments since v1.8.5 failed with DeployContainerExitNonZero because container crashed during startup validation. Investigation revealed: (1) startup validation at `src/main.py:219-221` checked for "sk-" prefix, (2) ANTHROPIC_API_KEY secret in DO may have been empty/corrupted. **Files:** `src/shared/config.py:23-27` (added validation_alias), `src/main.py:219-221` (removed sk- check), `app.yaml:39` (changed to CLAUDE_CODE_OAUTH_TOKEN). **Solution:** In DO App Platform console, set `CLAUDE_CODE_OAUTH_TOKEN` secret with value `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`, then verify v1.8.8 deployment succeeds.
+

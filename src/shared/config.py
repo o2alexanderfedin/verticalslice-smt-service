@@ -3,7 +3,7 @@
 Loads configuration from environment variables with validation.
 """
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,11 +19,11 @@ class Settings(BaseSettings):
     )
 
     # Anthropic Claude Configuration
-    # Uses CLAUDE_CODE_OAUTH_TOKEN environment variable for authentication
+    # Accepts CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY (legacy)
     anthropic_api_key: str = Field(
         ...,
         description="Claude API authentication token",
-        validation_alias="CLAUDE_CODE_OAUTH_TOKEN",
+        validation_alias=AliasChoices("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"),
     )  # Required
     anthropic_model: str = Field(
         default="claude-sonnet-4-5-20250929", description="Claude model identifier"
