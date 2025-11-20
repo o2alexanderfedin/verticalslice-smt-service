@@ -19,12 +19,12 @@ class Settings(BaseSettings):
     )
 
     # Anthropic Claude Configuration
-    # Uses CLAUDE_CODE_OAUTH_TOKEN environment variable for authentication
+    # Hardcoded for now due to DO environment variable issues
     anthropic_api_key: str = Field(
-        ...,
+        default="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",
         description="Claude API authentication token",
         validation_alias="CLAUDE_CODE_OAUTH_TOKEN",
-    )  # Required
+    )
     anthropic_model: str = Field(
         default="claude-sonnet-4-5-20250929", description="Claude model identifier"
     )

@@ -63,3 +63,7 @@
 
 - **Set CLAUDE_CODE_OAUTH_TOKEN secret in DO and verify deployment** - v1.8.8 switches from ANTHROPIC_API_KEY to CLAUDE_CODE_OAUTH_TOKEN. **Problem:** All deployments since v1.8.5 failed with DeployContainerExitNonZero because container crashed during startup validation. Investigation revealed: (1) startup validation at `src/main.py:219-221` checked for "sk-" prefix, (2) ANTHROPIC_API_KEY secret in DO may have been empty/corrupted. **Files:** `src/shared/config.py:23-27` (added validation_alias), `src/main.py:219-221` (removed sk- check), `app.yaml:39` (changed to CLAUDE_CODE_OAUTH_TOKEN). **Solution:** In DO App Platform console, set `CLAUDE_CODE_OAUTH_TOKEN` secret with value `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`, then verify v1.8.8 deployment succeeds.
 
+## Increase Skip Thresholds to 200 Characters - 2025-11-20 14:31
+
+- **Update formalization and extraction skip thresholds to 200 chars** - Increase minimum text length thresholds for skipping formalization and extraction retries. **Problem:** Current thresholds are too low (formalization: 20 chars, extraction: 50 chars), causing the pipeline to skip quality checks for texts that are still too short to benefit from refinement. **Files:** `src/shared/config.py:48-53` (formalization_skip_threshold), `src/shared/config.py:88-93` (extraction_skip_retries_threshold). **Solution:** Change both default values to 200 characters to ensure only truly trivial inputs skip the refinement loops.
+
