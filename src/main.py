@@ -117,10 +117,12 @@ For issues, questions, or feature requests, please refer to the project reposito
 )
 
 # Configure CORS
+# Note: allow_credentials=False is required when using allow_origins=["*"]
+# This enables maximum compatibility for cross-domain requests
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origins,
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
