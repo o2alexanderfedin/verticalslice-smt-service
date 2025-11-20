@@ -226,11 +226,6 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Update App Spec with new image
-        run: |
-          # Update the app spec with the new image tag
-          sed -i "s|image:.*|image: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}|g" app.yaml
-
       - name: Deploy to Digital Ocean App Platform
         id: deploy
         run: |

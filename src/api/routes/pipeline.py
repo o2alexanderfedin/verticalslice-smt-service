@@ -214,7 +214,9 @@ async def process_informal_text(
     try:
         # Execute pipeline
         result = await pipeline_service.process(
-            request.informal_text, skip_formalization=request.skip_formalization
+            request.informal_text,
+            skip_formalization=request.skip_formalization,
+            enrich=request.enrich,
         )
 
         # Match on Result type

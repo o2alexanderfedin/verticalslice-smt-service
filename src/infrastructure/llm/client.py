@@ -313,6 +313,118 @@ whatever is needed to reduce information loss and correctly represent the formal
             logger.error(f"Anthropic API error in fix_smt_errors: {e}")
             raise
 
+    @retry_with_backoff(
+        max_retries=3,
+        initial_delay=1.0,
+        exceptions=(anthropic.APIError, anthropic.APITimeoutError),
+    )
+    async def enrich_with_web_search(
+        self,
+        text: str,
+        max_searches: int = 5,
+    ) -> tuple[str, int, list[str]]:
+        """
+        Enrich text with domain knowledge using web search.
+
+        Uses Anthropic's web_search tool to gather relevant context,
+        definitions, and background information for domain-specific terminology.
+
+        Args:
+            text: Input text to enrich
+            max_searches: Maximum number of web searches to perform
+
+        Returns:
+            Tuple of (enriched_text, search_count, sources_used)
+
+        Raises:
+            anthropic.APIError: If API call fails after retries
+        """
+        logger.debug(
+            f"Starting web search enrichment with text_length={len(text)}, "
+            f"max_searches={max_searches}"
+        )
+
+        # System prompt for enrichment
+        system_prompt = """You are an expert at enriching technical and domain-specific text with relevant context.
+
+Your task is to:
+1. Identify terms, concepts, or references in the text that may need clarification
+2. Use web search to find authoritative definitions and context
+3. Return an enriched version of the text that adds helpful context inline or as a preamble
+
+Guidelines:
+- Only add context that helps clarify the meaning for SMT-LIB conversion
+- Keep the original meaning intact
+- Add definitions for domain-specific terms
+- Clarify ambiguous references
+- Be concise - add context without excessive verbosity
+- Format the enriched text clearly
+
+Return the enriched text only, no explanations."""
+
+        user_message = f"""Please enrich the following text with relevant domain knowledge and context:
+
+<text>
+{text}
+</text>
+
+Search for definitions and background information as needed, then provide the enriched text."""
+
+        try:
+            # Call API with web_search tool
+            message = await self._client.messages.create(
+                model=self._model,
+                max_tokens=self._max_tokens,
+                temperature=0.3,
+                system=system_prompt,
+                tools=[
+                    {
+                        "type": "web_search_20250305",
+                        "name": "web_search",
+                        "max_uses": max_searches,
+                    }
+                ],
+                messages=[{"role": "user", "content": user_message}],
+            )
+
+            # Parse response to extract enriched text and sources
+            enriched_text = ""
+            sources_used: list[str] = []
+            search_count = 0
+
+            for block in message.content:
+                if block.type == "text":
+                    enriched_text = block.text
+                elif block.type == "tool_use" and block.name == "web_search":
+                    search_count += 1
+                elif (
+                    block.type == "web_search_tool_result"
+                    and hasattr(block, "content")
+                    and block.content
+                ):
+                    # Extract URLs from search results
+                    for result in block.content:
+                        if hasattr(result, "url") and result.url and result.url not in sources_used:
+                            sources_used.append(result.url)
+
+            # If no text block found, use original text
+            if not enriched_text:
+                logger.warning("No enriched text in response, using original")
+                enriched_text = text
+
+            logger.info(
+                f"Web search enrichment complete: "
+                f"search_count={search_count}, "
+                f"sources_used={len(sources_used)}, "
+                f"output_length={len(enriched_text)}"
+            )
+
+            return enriched_text, search_count, sources_used
+
+        except anthropic.APIError as e:
+            logger.error(f"Anthropic API error in enrich_with_web_search: {e}")
+            raise
+
     async def close(self) -> None:
         """
         Close the Anthropic client and cleanup resources.

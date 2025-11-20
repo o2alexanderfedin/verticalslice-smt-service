@@ -92,6 +92,28 @@ class LLMProvider(Protocol):
         """
         ...
 
+    async def enrich_with_web_search(
+        self,
+        text: str,
+        max_searches: int = 5,
+    ) -> tuple[str, int, list[str]]:
+        """Enrich text with domain knowledge using web search.
+
+        Uses web search to gather relevant context, definitions, and
+        background information that helps clarify the input text.
+
+        Args:
+            text: Input text to enrich
+            max_searches: Maximum number of web searches to perform
+
+        Returns:
+            Tuple of (enriched_text, search_count, sources_used)
+
+        Raises:
+            LLMError: If LLM call fails
+        """
+        ...
+
 
 class SMTSolver(Protocol):
     """Protocol for SMT solver execution."""

@@ -97,6 +97,20 @@ class Settings(BaseSettings):
         description="Trigger manual review if similarity is within this distance of threshold",
     )
 
+    # Enrichment Configuration
+    enrichment_max_searches: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Maximum number of web searches per enrichment request",
+    )
+    enrichment_timeout: float = Field(
+        default=60.0,
+        ge=10.0,
+        le=300.0,
+        description="Timeout for enrichment step in seconds",
+    )
+
     # CORS Configuration
     cors_allowed_origins: list[str] = Field(default=["*"], description="Allowed CORS origins")
 

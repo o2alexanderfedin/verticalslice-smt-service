@@ -8,7 +8,8 @@ import time
 from typing import TYPE_CHECKING
 
 from src.domain.exceptions import PipelineError
-from src.domain.models import PipelineMetrics, VerifiedOutput
+from src.domain.models import EnrichmentResult, PipelineMetrics, VerifiedOutput
+from src.domain.steps.enrichment import EnrichmentStep
 from src.domain.steps.extraction import ExtractionStep
 from src.domain.steps.formalization import FormalizationStep
 from src.domain.steps.validation import ValidationStep
@@ -51,11 +52,15 @@ class PipelineService:
         logger.info("PipelineService initialized")
 
     async def process(
-        self, informal_text: str, skip_formalization: bool = False
+        self,
+        informal_text: str,
+        skip_formalization: bool = False,
+        enrich: bool = False,
     ) -> Result[VerifiedOutput, PipelineError]:
         """Process informal text through the complete pipeline.
 
-        Orchestrates all three steps sequentially:
+        Orchestrates all steps sequentially:
+        0. (Optional) Enrichment with web search
         1. Formalization with semantic verification
         2. Extraction with degradation check
         3. Validation with solver execution
@@ -63,13 +68,43 @@ class PipelineService:
         Args:
             informal_text: Input natural language text
             skip_formalization: If True, skip formalization and treat input as already formal
+            enrich: If True, enrich text with web search before processing
 
         Returns:
             Ok(VerifiedOutput) if pipeline succeeds
             Err(PipelineError) if any step fails
         """
-        logger.info(f"Starting pipeline processing (text_length={len(informal_text)})")
+        logger.info(
+            f"Starting pipeline processing (text_length={len(informal_text)}, enrich={enrich})"
+        )
         pipeline_start = time.time()
+
+        # Optional Step 0: Enrichment
+        enrichment_output: EnrichmentResult | None = None
+        text_to_process = informal_text
+
+        if enrich:
+            logger.info("=== Step 0: Enrichment ===")
+
+            enrichment_step = EnrichmentStep(
+                llm_provider=self.llm_provider,
+                max_searches=self.settings.enrichment_max_searches,
+                timeout=self.settings.enrichment_timeout,
+            )
+
+            enrichment_result = await enrichment_step.execute(informal_text)
+
+            match enrichment_result:
+                case Err(error):
+                    logger.error(f"Step 0 failed: {error}")
+                    return Err(error)
+                case Ok(enrichment_data):
+                    enrichment_output = enrichment_data
+                    text_to_process = enrichment_data.enriched_text
+                    logger.info(
+                        f"Step 0 succeeded: search_count={enrichment_data.search_count}, "
+                        f"sources={len(enrichment_data.sources_used)}"
+                    )
 
         # Step 1: Formalization
         logger.info("=== Step 1: Formalization ===")
@@ -87,7 +122,7 @@ class PipelineService:
         )
 
         formalization_result = await formalization_step.execute(
-            informal_text, force_skip=skip_formalization
+            text_to_process, force_skip=skip_formalization
         )
         formalization_time = time.time() - formalization_start
 
@@ -183,6 +218,12 @@ class PipelineService:
         # Build final verified output
         verified_output = VerifiedOutput(
             informal_text=informal_text,
+            enrichment_performed=enrichment_output is not None,
+            enrichment_search_count=(enrichment_output.search_count if enrichment_output else None),
+            enrichment_sources=enrichment_output.sources_used if enrichment_output else None,
+            enrichment_time_seconds=(
+                enrichment_output.enrichment_time_seconds if enrichment_output else None
+            ),
             formal_text=formal_text,
             formalization_similarity=formalization_output.similarity_score,
             smt_lib_code=smt_code,

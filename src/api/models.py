@@ -46,6 +46,16 @@ class ProcessRequest(BaseModel):
         ),
     )
 
+    enrich: bool = Field(
+        default=False,
+        description=(
+            "Enable web search enrichment before processing. "
+            "When enabled, the service will use web search to gather domain-specific "
+            "definitions, context, and clarifications before running the main pipeline. "
+            "Useful for inputs containing domain-specific terminology or ambiguous references."
+        ),
+    )
+
     model_config = {
         "json_schema_extra": {
             "examples": [
@@ -69,6 +79,24 @@ class ProcessResponse(BaseModel):
     # Original input
     informal_text: str = Field(
         description="The original informal natural language text that was processed"
+    )
+
+    # Optional enrichment metadata (Step 0)
+    enrichment_performed: bool = Field(
+        default=False,
+        description="Whether web search enrichment was performed on the input",
+    )
+    enrichment_search_count: int | None = Field(
+        default=None,
+        description="Number of web searches performed during enrichment (if enabled)",
+    )
+    enrichment_sources: list[str] | None = Field(
+        default=None,
+        description="URLs of sources used for enrichment (if enabled)",
+    )
+    enrichment_time_seconds: float | None = Field(
+        default=None,
+        description="Time spent on enrichment in seconds (if enabled)",
     )
 
     # Step 1 output: Formalization
@@ -228,6 +256,10 @@ class ProcessResponse(BaseModel):
         """
         return cls(
             informal_text=output.informal_text,
+            enrichment_performed=output.enrichment_performed,
+            enrichment_search_count=output.enrichment_search_count,
+            enrichment_sources=output.enrichment_sources,
+            enrichment_time_seconds=output.enrichment_time_seconds,
             formal_text=output.formal_text,
             formalization_similarity=output.formalization_similarity,
             smt_lib_code=output.smt_lib_code,

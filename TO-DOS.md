@@ -40,3 +40,17 @@
   ```
 
 - **Add smoke test to CI/CD workflow** - Create basic POST test in GitHub Actions verification step. **Problem:** No production endpoint testing after deployment - only health check exists. **Files:** `.github/workflows/deploy.yml:274-295`, `.github/scripts/smoke-tests.sh` (may need creation/update). **Solution:** Add curl POST test with sample input to smoke-tests.sh, verify response contains expected fields (check_sat_result, solver_success), fail deployment if smoke test fails.
+
+## Fix GitHub Actions Runner Disk Space Exhaustion - 2025-11-19 16:14
+
+- **Free disk space before Docker build in CI/CD** - GitHub Actions runner exhausts disk space during workflow execution. **Problem:** Runner reports "No space left on device" for worker logs at `/home/runner/actions-runner/cached/_diag/Worker_*.log`. The v1.8.3 workflow failed with `System.IO.IOException: No space left on device` even after CPU-only PyTorch fix. Issue affects runner diagnostics, not pip install. **Files:** `.github/workflows/deploy.yml` (Build Application job). **Solution:** Add step to free disk space before Docker build: remove unused toolchains (Android SDK, .NET, Haskell), clear Docker cache, remove large pre-installed packages. Example:
+  ```yaml
+  - name: Free disk space
+    run: |
+      sudo rm -rf /usr/share/dotnet
+      sudo rm -rf /opt/ghc
+      sudo rm -rf /usr/local/share/boost
+      sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      docker system prune -af
+      df -h
+  ```

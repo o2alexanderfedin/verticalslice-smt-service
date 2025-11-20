@@ -8,6 +8,27 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 
 # ============================================================================
+# Step 0: Enrichment Models (Optional)
+# ============================================================================
+
+
+class EnrichmentResult(BaseModel):
+    """Result from optional Step 0: Web Search Enrichment."""
+
+    enriched_text: str = Field(description="Text enriched with domain context from web searches")
+    original_text: str = Field(description="Original input text before enrichment")
+    search_count: int = Field(ge=0, le=20, description="Number of web searches performed")
+    sources_used: list[str] = Field(
+        default_factory=list, description="URLs of sources used for enrichment"
+    )
+    enrichment_time_seconds: float = Field(
+        ge=0.0, description="Time spent on enrichment in seconds"
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+
+# ============================================================================
 # Step 1: Formalization Models
 # ============================================================================
 
@@ -148,6 +169,20 @@ class VerifiedOutput(BaseModel):
 
     # Original input
     informal_text: str = Field(description="Original informal natural language text")
+
+    # Optional enrichment output (Step 0)
+    enrichment_performed: bool = Field(
+        default=False, description="Whether web search enrichment was performed"
+    )
+    enrichment_search_count: int | None = Field(
+        default=None, description="Number of web searches performed during enrichment"
+    )
+    enrichment_sources: list[str] | None = Field(
+        default=None, description="URLs of sources used for enrichment"
+    )
+    enrichment_time_seconds: float | None = Field(
+        default=None, description="Time spent on enrichment in seconds"
+    )
 
     # Step 1 output
     formal_text: str = Field(description="Formalized version with preserved semantics")

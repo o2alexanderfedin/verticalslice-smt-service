@@ -53,3 +53,11 @@ class SolverExecutionError(PipelineError):
     """Raised when SMT solver execution fails."""
 
     pass
+
+
+class EnrichmentError(PipelineError):
+    """Raised when web search enrichment step fails."""
+
+    def __init__(self, message: str, search_count: int = 0):
+        super().__init__(message)
+        self.search_count = search_count
