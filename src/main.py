@@ -216,13 +216,9 @@ async def startup_event():
     # CRITICAL: Validate required configuration
     errors: list[str] = []
 
-    # Check Anthropic API key
+    # Check Claude API token (CLAUDE_CODE_OAUTH_TOKEN)
     if not settings.anthropic_api_key or settings.anthropic_api_key.strip() == "":
-        errors.append("ANTHROPIC_API_KEY is not set or empty")
-    elif not settings.anthropic_api_key.startswith("sk-"):
-        errors.append(
-            f"ANTHROPIC_API_KEY appears invalid (should start with 'sk-', got '{settings.anthropic_api_key[:10]}...')"
-        )
+        errors.append("CLAUDE_CODE_OAUTH_TOKEN is not set or empty")
 
     # Check model configuration
     if not settings.anthropic_model:
