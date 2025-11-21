@@ -40,12 +40,7 @@ class AnthropicClient:
         _max_tokens: Maximum tokens for model responses
     """
 
-    def __init__(
-        self,
-        api_key: str,
-        model: str = "claude-sonnet-4-5-20250929",
-        max_tokens: int = 4096,
-    ):
+    def __init__(self):
         """
         Initialize Anthropic client.
 
@@ -58,7 +53,6 @@ class AnthropicClient:
             api_key="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"
         )
         self._model = "haiku"
-        self._max_tokens = None
 
         logger.info(f"Initialized AnthropicClient with model: {self._model}")
 

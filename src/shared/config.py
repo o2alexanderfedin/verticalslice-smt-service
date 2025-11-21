@@ -25,10 +25,8 @@ class Settings(BaseSettings):
         description="Claude API authentication token",
         validation_alias="CLAUDE_CODE_OAUTH_TOKEN",
     )
-    anthropic_model: str = Field(
-        default="claude-sonnet-4-5-20250929", description="Claude model identifier"
-    )
-    anthropic_max_tokens: int = Field(
+    anthropic_model: str = Field(default="haiku", description="Claude model identifier")
+    anthropic_max_tokens: int | None = Field(
         default=None, description="Maximum tokens for Claude responses"
     )
     anthropic_timeout: float = Field(

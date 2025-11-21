@@ -95,7 +95,7 @@ jobs:
       - name: Run pytest with coverage
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          ANTHROPIC_MODEL: claude-sonnet-4-5-20250929
+          ANTHROPIC_MODEL: haiku
         run: |
           echo "Running tests with coverage..."
           pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 || [ $? -eq 5 ]  # Exit code 5 = no tests collected (OK for now)
@@ -153,7 +153,7 @@ jobs:
         timeout-minutes: 2
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          ANTHROPIC_MODEL: claude-sonnet-4-5-20250929
+          ANTHROPIC_MODEL: haiku
           LOG_LEVEL: INFO
         run: |
           echo "Starting application to verify it runs..."
