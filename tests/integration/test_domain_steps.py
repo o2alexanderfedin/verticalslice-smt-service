@@ -44,7 +44,7 @@ def smt_solver() -> Z3Executor:
 
 @pytest.mark.skipif(
     not os.environ.get("ANTHROPIC_API_KEY") and not os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"),
-    reason="ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN not set"
+    reason="ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN not set",
 )
 class TestFormalizationStepIntegration:
     """Integration tests for FormalizationStep → LLMProvider, EmbeddingProvider."""
@@ -103,7 +103,7 @@ class TestFormalizationStepIntegration:
 
 @pytest.mark.skipif(
     not os.environ.get("ANTHROPIC_API_KEY") and not os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"),
-    reason="ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN not set"
+    reason="ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN not set",
 )
 class TestExtractionStepIntegration:
     """Integration tests for ExtractionStep → LLMProvider, EmbeddingProvider."""
@@ -279,7 +279,7 @@ class TestValidationStepIntegration:
 
 @pytest.mark.skipif(
     not os.environ.get("ANTHROPIC_API_KEY") and not os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"),
-    reason="ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN not set"
+    reason="ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN not set",
 )
 class TestEndToEndIntegration:
     """End-to-end integration test through all steps."""

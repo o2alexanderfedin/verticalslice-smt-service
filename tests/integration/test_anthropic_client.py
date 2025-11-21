@@ -13,7 +13,7 @@ from src.infrastructure.llm.client import AnthropicClient
 # Skip all tests in this module if no API key is available
 pytestmark = pytest.mark.skipif(
     not os.environ.get("ANTHROPIC_API_KEY") and not os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"),
-    reason="ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN not set"
+    reason="ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN not set",
 )
 
 
