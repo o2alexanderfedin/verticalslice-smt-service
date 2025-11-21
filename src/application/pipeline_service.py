@@ -116,8 +116,6 @@ class PipelineService:
             verifier=self.semantic_verifier,
             threshold=self.settings.formalization_similarity_threshold,
             max_retries=self.settings.formalization_max_retries,
-            temp_start=self.settings.formalization_temp_start,
-            temp_step=self.settings.formalization_temp_step,
             skip_threshold=self.settings.formalization_skip_threshold,
         )
 
