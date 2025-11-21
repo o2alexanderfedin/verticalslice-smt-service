@@ -246,6 +246,9 @@ jobs:
           echo "Updating app spec with image: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
           sed -i "s|tag:.*|tag: ${{ steps.version.outputs.version }}|g" app.yaml
 
+          # Inject API key from GitHub secrets
+          sed -i "s|PLACEHOLDER_OAUTH_TOKEN|${{ secrets.ANTHROPIC_API_KEY }}|g" app.yaml
+
           # Deploy and wait for completion
           echo "Deploying app (this may take 3-5 minutes)..."
           doctl apps update $APP_ID --spec app.yaml --wait || {

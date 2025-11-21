@@ -33,11 +33,11 @@ services:
     # Environment variables
     envs:
       # Claude API Configuration
-      # SECURITY: This secret must be set in Digital Ocean App Platform console
-      # Settings > App-Level Environment Variables > CLAUDE_CODE_OAUTH_TOKEN (encrypted)
+      # Value injected from GitHub secrets during deployment
       - key: CLAUDE_CODE_OAUTH_TOKEN
         scope: RUN_TIME
         type: SECRET
+        value: "PLACEHOLDER_OAUTH_TOKEN"
 
       - key: ANTHROPIC_TIMEOUT
         scope: RUN_TIME
