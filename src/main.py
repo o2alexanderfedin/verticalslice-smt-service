@@ -200,7 +200,6 @@ async def health_check():
         "status": "healthy",
         "service": settings.api_title,
         "version": settings.api_version,
-        "model": settings.anthropic_model,
         "embedding_model": settings.embedding_model_name,
     }
 
