@@ -86,3 +86,7 @@
 
 - **Fix all failing integration tests** - Multiple integration tests are failing and must be fixed immediately. **Problem:** Tests in `tests/integration/` are failing - tests were just created but have issues that prevent them from running successfully. These tests use real API calls and must work to validate layer-to-layer boundaries locally instead of costly DO deployments. **Files:** `tests/integration/test_anthropic_client.py`, `tests/integration/test_domain_steps.py`. **Solution:** Run tests locally with `python3 -m pytest tests/integration/ -v`, identify each failure, and fix the root causes. Priority is making all 15 tests pass. No excuses.
 
+## Fix Post-Deployment Verification Tests - 2025-11-21 01:31
+
+- **Remove /pipeline/examples endpoint and fix verification test expectations** - Post-deployment verification tests fail due to test/API mismatches. **Problem:** After v1.8.36 deployment (ValidationStep dict fix), core pipeline works but verification tests fail: (1) `/pipeline/examples` returns 500 - endpoint should be removed or fixed, (2) Tests expect `requires_manual_review` field not in API response, (3) Health check expects `model` field not in response, (4) Root `/` returns 307 redirect instead of expected 200. **Files:** `.github/scripts/integration-tests.sh`, `.github/scripts/smoke-tests.sh`, `src/api/routes/pipeline.py` (for examples endpoint). **Solution:** Either remove examples endpoint or fix it, update test scripts to match actual API response fields, fix redirect behavior test expectation.
+
