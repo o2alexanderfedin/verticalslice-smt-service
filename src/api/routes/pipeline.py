@@ -237,5 +237,3 @@ async def process_informal_text(
         raise HTTPException(
             status_code=500, detail="Internal server error during pipeline processing"
         ) from e
-
-
