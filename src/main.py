@@ -225,7 +225,6 @@ async def startup_event():
         logger.critical(error_msg)
         raise RuntimeError(error_msg)
 
-    logger.info(f"Using Anthropic model: {settings.anthropic_model}")
     logger.info(f"Using embedding model: {settings.embedding_model_name}")
     logger.info("Configuration validation passed - all critical settings are present")
 
