@@ -136,26 +136,10 @@ async def startup_event():
 
     # Configuration validation
     logger.info(f"Settings loaded:")
-    logger.info(f"  anthropic_api_key: {'SET' if settings.anthropic_api_key else 'NOT SET'}")
-    logger.info(f"  anthropic_api_key length: {len(settings.anthropic_api_key) if settings.anthropic_api_key else 0}")
-    logger.info(f"  anthropic_api_key prefix: {settings.anthropic_api_key[:10] if settings.anthropic_api_key else 'N/A'}...")
-    logger.info(f"  anthropic_model: {settings.anthropic_model}")
     logger.info(f"  embedding_model_name: {settings.embedding_model_name}")
 
     # Validate critical config
     errors: list[str] = []
-    if not settings.anthropic_api_key or settings.anthropic_api_key.strip() == "":
-        errors.append("ANTHROPIC_API_KEY/CLAUDE_CODE_OAUTH_TOKEN is not set")
-    if not settings.anthropic_model:
-        errors.append("ANTHROPIC_MODEL is not set")
-
-    if errors:
-        logger.critical("CONFIGURATION ERRORS:")
-        for e in errors:
-            logger.critical(f"  - {e}")
-        logger.info("=" * 60)
-        raise RuntimeError("\\n".join(errors))
-
     # Test imports
     try:
         logger.info("Testing critical imports...")

@@ -47,12 +47,7 @@ def get_llm_provider() -> AnthropicClient:
     Returns:
         Anthropic Claude client
     """
-    settings = get_settings()
-    return AnthropicClient(
-        api_key=settings.anthropic_api_key,
-        model=settings.anthropic_model,
-        max_tokens=settings.anthropic_max_tokens,
-    )
+    return AnthropicClient()
 
 
 @lru_cache

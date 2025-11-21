@@ -2193,10 +2193,7 @@ def get_llm_provider() -> AnthropicClient:
     """
     settings = get_settings()
     logger.info("Initializing Anthropic Claude client")
-    return AnthropicClient(
-        api_key=settings.anthropic_api_key,
-        model=settings.anthropic_model
-    )
+    return AnthropicClient()
 
 
 @lru_cache()
@@ -3060,7 +3057,7 @@ class OpenAIClient:
 # Configuration-based selection
 def get_llm_provider(settings: Settings) -> LLMProvider:
     if settings.llm_provider == "anthropic":
-        return AnthropicClient(settings.anthropic_api_key)
+        return AnthropicClient()
     elif settings.llm_provider == "openai":
         return OpenAIClient(settings.openai_api_key)
     else:
