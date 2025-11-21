@@ -44,9 +44,7 @@ class AnthropicClient:
         """
         Initialize Anthropic client.
         """
-        api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get(
-            "CLAUDE_CODE_OAUTH_TOKEN"
-        )
+        api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
         if not api_key:
             raise RuntimeError(
                 "ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN environment variable is required"
