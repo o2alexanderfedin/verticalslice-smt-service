@@ -48,7 +48,7 @@ class Z3Executor:
     async def execute(
         self,
         smt_lib_code: str,
-        timeout_seconds: int = 30,
+        timeout: float = 30.0,
         get_model: bool = True,
         get_unsat_core: bool = False,
     ) -> SolverResult:
@@ -61,7 +61,7 @@ class Z3Executor:
 
         Args:
             smt_lib_code: Complete SMT-LIB file to execute
-            timeout_seconds: Maximum execution time (default: 30)
+            timeout: Maximum execution time in seconds (default: 30.0)
             get_model: Whether to retrieve model if sat (default: True)
             get_unsat_core: Whether to retrieve unsat-core if unsat (default: False)
 
@@ -73,7 +73,7 @@ class Z3Executor:
             RuntimeError: If Z3 process fails to start
         """
         logger.debug(
-            f"Executing Z3 with timeout={timeout_seconds}s, " f"code_length={len(smt_lib_code)}"
+            f"Executing Z3 with timeout={timeout}s, " f"code_length={len(smt_lib_code)}"
         )
 
         try:
@@ -90,10 +90,10 @@ class Z3Executor:
             try:
                 stdout_bytes, stderr_bytes = await asyncio.wait_for(
                     process.communicate(smt_lib_code.encode("utf-8")),
-                    timeout=timeout_seconds,
+                    timeout=timeout,
                 )
             except TimeoutError:
-                logger.error(f"Z3 execution timed out after {timeout_seconds}s")
+                logger.error(f"Z3 execution timed out after {timeout}s")
                 process.kill()
                 await process.wait()
                 return SolverResult(
@@ -101,7 +101,7 @@ class Z3Executor:
                     check_sat_result="timeout",
                     model=None,
                     unsat_core=None,
-                    raw_output=f"Execution timed out after {timeout_seconds} seconds",
+                    raw_output=f"Execution timed out after {timeout} seconds",
                     attempts=1,
                 )
 

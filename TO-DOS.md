@@ -71,3 +71,18 @@
 
 - **Update formalization and extraction skip thresholds to 200 chars** - Increase minimum text length thresholds for skipping formalization and extraction retries. **Problem:** Current thresholds are too low (formalization: 20 chars, extraction: 50 chars), causing the pipeline to skip quality checks for texts that are still too short to benefit from refinement. **Files:** `src/shared/config.py:48-53` (formalization_skip_threshold), `src/shared/config.py:88-93` (extraction_skip_retries_threshold). **Solution:** Change both default values to 200 characters to ensure only truly trivial inputs skip the refinement loops.
 
+## Add Layer-to-Layer Integration Tests - 2025-11-20 19:57
+
+- **Create integration tests for service layer boundaries** - Add tests verifying interactions between adjacent layers without full deployment. **Problem:** Currently debugging requires deploying to Digital Ocean (~15 min per iteration), which is slow and expensive. Local layer-to-layer tests would catch integration issues much faster. **Files:** `tests/integration/` (new directory), `src/domain/steps/formalization.py`, `src/domain/steps/extraction.py`, `src/infrastructure/llm/client.py`, `src/domain/protocols.py`. **Solution:** Create tests for:
+  - FormalizationStep → LLMProvider protocol
+  - ExtractionStep → LLMProvider protocol
+  - AnthropicClient → AsyncAnthropic SDK
+  - ValidationStep → SMTExecutor protocol
+  - PipelineService → all step dependencies
+
+  Use real API calls for LLM tests (with short inputs to minimize cost), mock SMT solver where appropriate.
+
+## Fix All Failing Integration Tests - 2025-11-20 21:01
+
+- **Fix all failing integration tests** - Multiple integration tests are failing and must be fixed immediately. **Problem:** Tests in `tests/integration/` are failing - tests were just created but have issues that prevent them from running successfully. These tests use real API calls and must work to validate layer-to-layer boundaries locally instead of costly DO deployments. **Files:** `tests/integration/test_anthropic_client.py`, `tests/integration/test_domain_steps.py`. **Solution:** Run tests locally with `python3 -m pytest tests/integration/ -v`, identify each failure, and fix the root causes. Priority is making all 15 tests pass. No excuses.
+

@@ -9,6 +9,7 @@ for handling transient API failures.
 """
 
 import logging
+import os
 
 import anthropic
 
@@ -43,10 +44,15 @@ class AnthropicClient:
         """
         Initialize Anthropic client.
         """
-        self._client = anthropic.AsyncAnthropic(
-            api_key="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"
+        api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get(
+            "CLAUDE_CODE_OAUTH_TOKEN"
         )
-        self._model = "haiku"
+        if not api_key:
+            raise RuntimeError(
+                "ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN environment variable is required"
+            )
+        self._client = anthropic.AsyncAnthropic(api_key=api_key)
+        self._model = "claude-3-haiku-20240307"
 
         logger.info(f"Initialized AnthropicClient with model: {self._model}")
 
@@ -122,7 +128,7 @@ Provide the revised formalization now (just the text, no explanation)."""
 
         try:
             message = await self._client.messages.create(
-                model=self._model, temperature=0, messages=messages
+                model=self._model, max_tokens=4096, temperature=0, messages=messages
             )
 
             # Extract text from response
@@ -223,6 +229,7 @@ whatever is needed to reduce information loss and correctly represent the formal
 
             message = await self._client.messages.create(
                 model=self._model,
+                max_tokens=4096,
                 # CRITICAL: Temperature MUST be 0.0 for deterministic code generation
                 # DO NOT make this configurable or allow it to vary across retries
                 # Extraction requires consistent, reproducible SMT-LIB output
@@ -280,6 +287,7 @@ whatever is needed to reduce information loss and correctly represent the formal
         try:
             message = await self._client.messages.create(
                 model=self._model,
+                max_tokens=4096,
                 temperature=0.0,  # Deterministic for code fixing
                 messages=[{"role": "user", "content": prompt}],
             )

@@ -64,7 +64,7 @@ class TestFormalizationStepIntegration:
         await llm_provider.close()
 
         assert result.is_ok()
-        formal_result = result.ok_value
+        formal_result = result.value
         assert formal_result.formal_text
         assert formal_result.similarity_score > 0
         assert formal_result.attempts >= 1
@@ -88,7 +88,7 @@ class TestFormalizationStepIntegration:
         await llm_provider.close()
 
         assert result.is_ok()
-        formal_result = result.ok_value
+        formal_result = result.value
         # Should skip and return original text
         assert formal_result.formal_text == "x > 5"
         assert formal_result.similarity_score == 1.0
@@ -119,7 +119,7 @@ class TestExtractionStepIntegration:
         await llm_provider.close()
 
         assert result.is_ok()
-        extraction_result = result.ok_value
+        extraction_result = result.value
         assert extraction_result.smt_lib_code
         assert extraction_result.degradation >= 0
         assert extraction_result.attempts >= 1
@@ -146,7 +146,7 @@ class TestExtractionStepIntegration:
         await llm_provider.close()
 
         assert result.is_ok()
-        extraction_result = result.ok_value
+        extraction_result = result.value
         # Should only make 1 attempt due to skip
         assert extraction_result.attempts == 1
 
@@ -178,7 +178,7 @@ class TestValidationStepIntegration:
         await llm_provider.close()
 
         assert result.is_ok()
-        solver_result = result.ok_value
+        solver_result = result.value
         assert solver_result.success
         assert solver_result.check_sat_result == "sat"
         assert solver_result.attempts == 1
@@ -206,7 +206,7 @@ class TestValidationStepIntegration:
         await llm_provider.close()
 
         assert result.is_ok()
-        solver_result = result.ok_value
+        solver_result = result.value
         assert solver_result.success
         assert solver_result.check_sat_result == "unsat"
 
@@ -232,7 +232,7 @@ class TestValidationStepIntegration:
         await llm_provider.close()
 
         assert result.is_ok()
-        solver_result = result.ok_value
+        solver_result = result.value
         assert solver_result.success
 
     @pytest.mark.asyncio
@@ -261,10 +261,10 @@ class TestValidationStepIntegration:
         # May or may not succeed depending on LLM fix quality
         # But should not raise exception
         if result.is_ok():
-            assert result.ok_value.success
+            assert result.value.success
         else:
             # If it fails, should have made all retry attempts
-            assert result.err_value.attempts == 3
+            assert result.error.attempts == 3
 
 
 class TestEndToEndIntegration:
@@ -291,7 +291,7 @@ class TestEndToEndIntegration:
         formal_result = await formalization_step.execute("x must be greater than 5")
 
         assert formal_result.is_ok()
-        formal_text = formal_result.ok_value.formal_text
+        formal_text = formal_result.value.formal_text
 
         # Step 2: Extraction
         extraction_step = ExtractionStep(
@@ -305,7 +305,7 @@ class TestEndToEndIntegration:
         extraction_result = await extraction_step.execute(formal_text)
 
         assert extraction_result.is_ok()
-        smt_code = extraction_result.ok_value.smt_lib_code
+        smt_code = extraction_result.value.smt_lib_code
 
         # Step 3: Validation
         validation_step = ValidationStep(
@@ -319,5 +319,5 @@ class TestEndToEndIntegration:
 
         # The full pipeline should succeed
         assert validation_result.is_ok()
-        assert validation_result.ok_value.success
-        assert validation_result.ok_value.check_sat_result == "sat"
+        assert validation_result.value.success
+        assert validation_result.value.check_sat_result == "sat"
