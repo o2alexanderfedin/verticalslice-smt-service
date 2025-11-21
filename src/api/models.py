@@ -22,7 +22,7 @@ class ProcessRequest(BaseModel):
 
     informal_text: str = Field(
         min_length=1,
-        max_length=10000,
+        max_length=100000,
         description=(
             "Informal natural language text containing logical constraints or rules to process. "
             "Should describe conditions, relationships, or requirements that can be formalized. "
