@@ -122,9 +122,7 @@ Provide the revised formalization now (just the text, no explanation)."""
 
         try:
             message = await self._client.messages.create(
-                model=self._model,
-                temperature=0,
-                messages=messages,
+                model=self._model, temperature=0, messages=messages
             )
 
             # Extract text from response

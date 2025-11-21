@@ -34,7 +34,6 @@ class LLMProvider(Protocol):
     async def formalize(
         self,
         informal_text: str,
-        temperature: float,
         previous_attempt: str | None = None,
         previous_similarity: float | None = None,
     ) -> str:

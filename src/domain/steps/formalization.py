@@ -27,8 +27,6 @@ class FormalizationStep:
         verifier: "SemanticVerifier",
         threshold: float = 0.91,
         max_retries: int = 3,
-        temp_start: float = 0.0,
-        temp_step: float = 0.2,
         skip_threshold: int = 20,
     ):
         """Initialize formalization step.
@@ -39,8 +37,6 @@ class FormalizationStep:
             verifier: Semantic similarity verifier
             threshold: Minimum similarity threshold (default 0.91)
             max_retries: Maximum retry attempts (default 3)
-            temp_start: Starting temperature (default 0.0)
-            temp_step: Temperature increase per retry (default 0.2)
             skip_threshold: Skip formalization for inputs shorter than this (default 20)
         """
         self.llm_provider = llm_provider
@@ -48,8 +44,6 @@ class FormalizationStep:
         self.verifier = verifier
         self.threshold = threshold
         self.max_retries = max_retries
-        self.temp_start = temp_start
-        self.temp_step = temp_step
         self.skip_threshold = skip_threshold
 
     async def execute(
@@ -115,12 +109,8 @@ class FormalizationStep:
 
         # Retry loop with conversation-based refinement
         for attempt in range(self.max_retries):
-            # Adjust temperature on each attempt (stays 0 if temp_step=0)
-            temperature = self.temp_start + attempt * self.temp_step
-
             logger.debug(
                 f"Formalization attempt {attempt + 1}/{self.max_retries} "
-                f"(temperature={temperature:.2f}, "
                 f"mode={'refinement' if previous_attempt else 'first_attempt'})"
             )
 
@@ -128,7 +118,6 @@ class FormalizationStep:
                 # Call LLM with optional refinement context
                 formal_text = await self.llm_provider.formalize(
                     informal_text,
-                    temperature=temperature,
                     previous_attempt=previous_attempt,
                     previous_similarity=previous_similarity,
                 )
