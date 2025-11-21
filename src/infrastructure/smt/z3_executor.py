@@ -72,9 +72,7 @@ class Z3Executor:
             asyncio.TimeoutError: If solver execution exceeds timeout
             RuntimeError: If Z3 process fails to start
         """
-        logger.debug(
-            f"Executing Z3 with timeout={timeout}s, " f"code_length={len(smt_lib_code)}"
-        )
+        logger.debug(f"Executing Z3 with timeout={timeout}s, code_length={len(smt_lib_code)}")
 
         try:
             # Create async subprocess for Z3
