@@ -257,6 +257,8 @@ jobs:
 
           # Get deployment URL
           DEPLOYMENT_URL=$(doctl apps list --format ID,DefaultIngress --no-header | grep $APP_ID | awk '{print $2}')
+          # Ensure URL has https:// prefix (strip if already present to avoid duplication)
+          DEPLOYMENT_URL=${DEPLOYMENT_URL#https://}
           echo "url=https://$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "Deployment URL: https://$DEPLOYMENT_URL"
 
