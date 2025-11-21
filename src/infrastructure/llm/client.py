@@ -54,11 +54,9 @@ class AnthropicClient:
             model: Claude model identifier
             max_tokens: Maximum tokens for responses (default: 4096)
         """
-        self._client = anthropic.AsyncAnthropic(
-            api_key="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"
-        )
-        self._model = "haiku"
-        self._max_tokens = None
+        self._client = anthropic.AsyncAnthropic(api_key=api_key)
+        self._model = model
+        self._max_tokens = max_tokens
 
         logger.info(f"Initialized AnthropicClient with model: {self._model}")
 
