@@ -36,18 +36,12 @@ class AnthropicClient:
 
     Attributes:
         _client: Anthropic async client instance
-        _model: Claude model identifier (e.g., claude-sonnet-4-5-20250929)
-        _max_tokens: Maximum tokens for model responses
+        _model: Claude model identifier (e.g., haiku)
     """
 
     def __init__(self):
         """
         Initialize Anthropic client.
-
-        Args:
-            api_key: Anthropic API key
-            model: Claude model identifier
-            max_tokens: Maximum tokens for responses (default: 4096)
         """
         self._client = anthropic.AsyncAnthropic(
             api_key="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"
@@ -64,7 +58,7 @@ class AnthropicClient:
     async def formalize(
         self,
         informal_text: str,
-        temperature: float = 0.3,
+        temperature: float = 0,
         previous_attempt: str | None = None,
         previous_similarity: float | None = None,
     ) -> str:
@@ -77,7 +71,7 @@ class AnthropicClient:
 
         Args:
             informal_text: Source natural language text
-            temperature: Sampling temperature (0.0-1.0, default: 0.3)
+            temperature: Sampling temperature (0.0-1.0, default: 0)
             previous_attempt: Previous formalization attempt (for refinement)
             previous_similarity: Similarity score of previous attempt
 
@@ -129,8 +123,7 @@ Provide the revised formalization now (just the text, no explanation)."""
         try:
             message = await self._client.messages.create(
                 model=self._model,
-                max_tokens=self._max_tokens,
-                temperature=temperature,
+                temperature=0,
                 messages=messages,
             )
 
@@ -232,7 +225,6 @@ whatever is needed to reduce information loss and correctly represent the formal
 
             message = await self._client.messages.create(
                 model=self._model,
-                max_tokens=self._max_tokens,
                 # CRITICAL: Temperature MUST be 0.0 for deterministic code generation
                 # DO NOT make this configurable or allow it to vary across retries
                 # Extraction requires consistent, reproducible SMT-LIB output
@@ -290,7 +282,6 @@ whatever is needed to reduce information loss and correctly represent the formal
         try:
             message = await self._client.messages.create(
                 model=self._model,
-                max_tokens=self._max_tokens,
                 temperature=0.0,  # Deterministic for code fixing
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -370,8 +361,7 @@ Search for definitions and background information as needed, then provide the en
             # Call API with web_search tool
             message = await self._client.messages.create(
                 model=self._model,
-                max_tokens=self._max_tokens,
-                temperature=0.3,
+                temperature=0,
                 system=system_prompt,
                 tools=[
                     {
