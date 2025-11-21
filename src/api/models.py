@@ -202,15 +202,6 @@ class ProcessResponse(BaseModel):
         ),
         examples=[True],
     )
-    requires_manual_review: bool = Field(
-        description=(
-            "Whether this output should be manually reviewed by a human. "
-            "Triggered when: quality scores are close to thresholds, "
-            "multiple retry attempts were needed, or other risk indicators are present. "
-            "True does not mean the output is incorrect, just that extra caution is advised."
-        ),
-        examples=[False],
-    )
 
     model_config = {
         "json_schema_extra": {
@@ -238,7 +229,6 @@ class ProcessResponse(BaseModel):
                         "success": True,
                     },
                     "passed_all_checks": True,
-                    "requires_manual_review": False,
                 }
             ]
         }
@@ -270,7 +260,6 @@ class ProcessResponse(BaseModel):
             solver_success=output.solver_success,
             metrics=output.metrics,
             passed_all_checks=output.passed_all_checks,
-            requires_manual_review=output.requires_manual_review,
         )
 
 

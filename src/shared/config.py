@@ -19,16 +19,6 @@ class Settings(BaseSettings):
     )
 
     # Anthropic Claude Configuration
-    # Hardcoded for now due to DO environment variable issues
-    anthropic_api_key: str = Field(
-        default="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",
-        description="Claude API authentication token",
-        validation_alias="CLAUDE_CODE_OAUTH_TOKEN",
-    )
-    anthropic_model: str = Field(default="haiku", description="Claude model identifier")
-    anthropic_max_tokens: int | None = Field(
-        default=None, description="Maximum tokens for Claude responses"
-    )
     anthropic_timeout: float = Field(
         default=120.0, description="Timeout for Anthropic API calls in seconds"
     )
@@ -88,16 +78,6 @@ class Settings(BaseSettings):
         ge=0,
         le=200,
         description="Skip extraction retries for formal texts shorter than this (in characters, 0=never skip)",
-    )
-
-    # Manual Review Triggers
-    manual_review_high_retry_threshold: int = Field(
-        default=2,
-        description="Trigger manual review if any step required more than this many attempts",
-    )
-    manual_review_similarity_close_threshold: float = Field(
-        default=0.02,
-        description="Trigger manual review if similarity is within this distance of threshold",
     )
 
     # Enrichment Configuration

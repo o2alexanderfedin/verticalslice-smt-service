@@ -206,15 +206,6 @@ class PipelineService:
             success=True,
         )
 
-        # Determine if manual review is required
-        requires_manual_review = self._should_require_manual_review(
-            formalization_output.attempts,
-            formalization_output.similarity_score,
-            extraction_output.attempts,
-            extraction_output.degradation,
-            solver_output.attempts,
-        )
-
         # Build final verified output
         verified_output = VerifiedOutput(
             informal_text=informal_text,
@@ -234,79 +225,8 @@ class PipelineService:
             solver_success=solver_output.success,
             metrics=metrics,
             passed_all_checks=True,
-            requires_manual_review=requires_manual_review,
         )
 
-        logger.info(
-            f"Pipeline completed successfully in {total_time:.2f}s "
-            f"(manual_review={requires_manual_review})"
-        )
+        logger.info(f"Pipeline completed successfully in {total_time:.2f}s")
 
         return Ok(verified_output)
-
-    def _should_require_manual_review(
-        self,
-        formalization_attempts: int,
-        formalization_similarity: float,
-        extraction_attempts: int,
-        extraction_degradation: float,
-        validation_attempts: int,
-    ) -> bool:
-        """Determine if manual review is recommended.
-
-        Triggers:
-        1. High retry count in any step
-        2. Similarity/degradation close to thresholds
-
-        Args:
-            formalization_attempts: Number of formalization attempts
-            formalization_similarity: Final similarity score
-            extraction_attempts: Number of extraction attempts
-            extraction_degradation: Final degradation score
-            validation_attempts: Number of validation attempts
-
-        Returns:
-            True if manual review is recommended
-        """
-        # Check high retry counts
-        high_retry_threshold = self.settings.manual_review_high_retry_threshold
-
-        if formalization_attempts > high_retry_threshold:
-            logger.info(
-                f"Manual review triggered: high formalization attempts ({formalization_attempts})"
-            )
-            return True
-
-        if extraction_attempts > high_retry_threshold:
-            logger.info(
-                f"Manual review triggered: high extraction attempts ({extraction_attempts})"
-            )
-            return True
-
-        if validation_attempts > high_retry_threshold:
-            logger.info(
-                f"Manual review triggered: high validation attempts ({validation_attempts})"
-            )
-            return True
-
-        # Check if similarity is close to threshold
-        similarity_margin = (
-            formalization_similarity - self.settings.formalization_similarity_threshold
-        )
-        if similarity_margin < self.settings.manual_review_similarity_close_threshold:
-            logger.info(
-                f"Manual review triggered: similarity close to threshold "
-                f"(margin={similarity_margin:.4f})"
-            )
-            return True
-
-        # Check if degradation is close to threshold
-        degradation_margin = self.settings.extraction_max_degradation - extraction_degradation
-        if degradation_margin < self.settings.manual_review_similarity_close_threshold:
-            logger.info(
-                f"Manual review triggered: degradation close to threshold "
-                f"(margin={degradation_margin:.4f})"
-            )
-            return True
-
-        return False

@@ -87,8 +87,7 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
       "unsat_core": null,
       "solver_success": true,
       "metrics": { ... },
-      "passed_all_checks": true,
-      "requires_manual_review": false
+      "passed_all_checks": true
     }
     ```
 
@@ -125,7 +124,6 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
                             "success": True,
                         },
                         "passed_all_checks": True,
-                        "requires_manual_review": False,
                     }
                 }
             },

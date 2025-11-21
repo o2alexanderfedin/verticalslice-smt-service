@@ -209,6 +209,5 @@ class VerifiedOutput(BaseModel):
 
     # Quality gates
     passed_all_checks: bool = Field(description="Whether all quality thresholds were met")
-    requires_manual_review: bool = Field(description="Whether manual review is recommended")
 
     model_config = ConfigDict(frozen=False)  # Mutable for building up
