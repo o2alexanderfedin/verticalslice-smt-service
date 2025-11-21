@@ -109,6 +109,7 @@ class FormalizationStep:
             )
 
         best_similarity = 0.0
+        best_formal_text: str | None = None
         previous_attempt: str | None = None
         previous_similarity: float | None = None
 
@@ -152,6 +153,7 @@ class FormalizationStep:
                 # Track best result
                 if similarity > best_similarity:
                     best_similarity = similarity
+                    best_formal_text = formal_text
 
                 # Check threshold
                 if similarity >= self.threshold:
@@ -172,18 +174,27 @@ class FormalizationStep:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
                 # Continue to next attempt
 
-        # All retries exhausted
+        # All retries exhausted - return best result with warning
         logger.warning(
-            f"Formalization failed after {self.max_retries} attempts. "
-            f"Best similarity: {best_similarity:.4f} (threshold: {self.threshold})"
+            f"Formalization did not meet threshold after {self.max_retries} attempts. "
+            f"Using best result with similarity: {best_similarity:.4f} (threshold: {self.threshold})"
         )
+
+        # Return best result if we have one
+        if best_formal_text is not None:
+            return Ok(
+                FormalizationResult(
+                    formal_text=best_formal_text,
+                    similarity_score=best_similarity,
+                    attempts=self.max_retries,
+                )
+            )
+
+        # No successful attempts at all
         return Err(
             FormalizationError(
-                message=(
-                    f"Failed to meet similarity threshold after {self.max_retries} attempts. "
-                    f"Best similarity: {best_similarity:.4f}, Required: {self.threshold}"
-                ),
-                best_similarity=best_similarity,
+                message=f"All {self.max_retries} formalization attempts failed with exceptions",
+                best_similarity=0.0,
                 attempts=self.max_retries,
             )
         )

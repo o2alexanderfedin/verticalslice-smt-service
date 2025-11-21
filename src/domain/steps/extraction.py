@@ -95,6 +95,7 @@ class ExtractionStep:
             )
 
         best_degradation = 1.0
+        best_smt_code: str | None = None
         previous_attempt: str | None = None
         previous_degradation: float | None = None
 
@@ -136,6 +137,7 @@ class ExtractionStep:
                 # Track best result
                 if degradation < best_degradation:
                     best_degradation = degradation
+                    best_smt_code = smt_code
 
                 # Check threshold (or accept if skipping retries)
                 if degradation <= self.max_degradation or skip_retries:
@@ -160,18 +162,27 @@ class ExtractionStep:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
                 # Continue to next attempt
 
-        # All retries exhausted
+        # All retries exhausted - return best result with warning
         logger.warning(
-            f"Extraction failed after {max_attempts} attempts. "
-            f"Best degradation: {best_degradation:.4f} (max: {self.max_degradation})"
+            f"Extraction did not meet threshold after {max_attempts} attempts. "
+            f"Using best result with degradation: {best_degradation:.4f} (max: {self.max_degradation})"
         )
+
+        # Return best result if we have one
+        if best_smt_code is not None:
+            return Ok(
+                ExtractionResult(
+                    smt_lib_code=best_smt_code,
+                    degradation=best_degradation,
+                    attempts=max_attempts,
+                )
+            )
+
+        # No successful attempts at all
         return Err(
             ExtractionError(
-                message=(
-                    f"Failed to meet degradation threshold after {max_attempts} attempts. "
-                    f"Best degradation: {best_degradation:.4f}, Max allowed: {self.max_degradation}"
-                ),
-                best_degradation=best_degradation,
+                message=f"All {max_attempts} extraction attempts failed with exceptions",
+                best_degradation=1.0,
                 attempts=max_attempts,
             )
         )
