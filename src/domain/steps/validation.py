@@ -91,24 +91,39 @@ class ValidationStep:
                 result = await self.smt_solver.execute(current_code, timeout=self.solver_timeout)
 
                 # Check if execution succeeded
-                if result.success:
+                # Handle both dict (PysmtExecutor) and object (Z3Executor) returns
+                success = result["success"] if isinstance(result, dict) else result.success
+                check_sat = (
+                    result["check_sat_result"]
+                    if isinstance(result, dict)
+                    else result.check_sat_result
+                )
+                model = result.get("model") if isinstance(result, dict) else result.model
+                unsat_core = (
+                    result.get("unsat_core") if isinstance(result, dict) else result.unsat_core
+                )
+                raw_output = (
+                    result.get("raw_output", "") if isinstance(result, dict) else result.raw_output
+                )
+
+                if success:
                     logger.info(
                         f"Validation succeeded after {attempt + 1} attempts. "
-                        f"Result: {result.check_sat_result}"
+                        f"Result: {check_sat}"
                     )
                     return Ok(
                         SolverResult(
                             success=True,
-                            check_sat_result=result.check_sat_result,
-                            model=result.model,
-                            unsat_core=result.unsat_core,
-                            raw_output=result.raw_output,
+                            check_sat_result=check_sat,
+                            model=model,
+                            unsat_core=unsat_core,
+                            raw_output=raw_output,
                             attempts=attempt + 1,
                         )
                     )
 
                 # Execution failed - try to fix
-                last_error = result.raw_output or "Unknown error"
+                last_error = raw_output or "Unknown error"
                 logger.warning(f"Attempt {attempt + 1} failed with error: {last_error}")
 
                 if attempt < self.max_retries - 1:
