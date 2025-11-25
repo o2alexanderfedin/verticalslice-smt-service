@@ -1,0 +1,27 @@
+graph TB
+    Start([Natural Language Input]) --> Phase1[Phase 1: Formalization]
+
+    Phase1 --> Phase1a[Convert to formal text]
+    Phase1a --> Phase1b[AI-powered semantic analysis]
+    Phase1b --> Phase1c{Quality check}
+    Phase1c -->|Pass| Phase2
+    Phase1c -->|Fail| Phase1a
+
+    Phase2[Phase 2: Logic Generation] --> Phase2a[Generate SMT-LIB code]
+    Phase2a --> Phase2b[Measure accuracy]
+    Phase2b --> Phase2c{Quality check}
+    Phase2c -->|Pass| Phase3
+    Phase2c -->|Fail| Phase2a
+
+    Phase3[Phase 3: Formal Verification] --> Phase3a[Execute verification engine]
+    Phase3a --> Phase3b[Validate syntax & logic]
+    Phase3b --> Phase3c{Verification result}
+    Phase3c -->|Success| Output([Verified Output])
+    Phase3c -->|Error| Phase3d[Auto-correction]
+    Phase3d --> Phase3a
+
+    style Phase1 fill:#e1f5ff
+    style Phase2 fill:#fff4e1
+    style Phase3 fill:#e8f5e9
+    style Start fill:#f3e5f5
+    style Output fill:#f3e5f5

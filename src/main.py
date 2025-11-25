@@ -32,31 +32,43 @@ Transform natural language requirements into verified formal logic through an AI
 
 This service provides a production-grade API for converting informal logical constraints and business rules into formally verified representations. It ensures accuracy through multiple quality gates and automatic error correction.
 
-<!-- Mermaid diagram - renders in GitHub and Swagger UI -->
 ## How It Works
 
-```mermaid
-graph LR
-    A[Natural Language Input] --> B[AI-Powered Processing]
-    B --> C[Verified Output]
 ```
-
-The service implements an intelligent three-phase process with quality verification at each stage:
-
-### Phase 1: Formalization
-- Converts informal text to formal, structured representation
-- AI-powered analysis ensures meaning is preserved
-- Automatic quality verification and retry mechanisms
-
-### Phase 2: Logic Generation
-- Generates verified formal representations from structured text
-- Measures accuracy throughout transformation
-- Intelligent refinement to minimize information loss
-
-### Phase 3: Formal Verification
-- Validates logic with enterprise-grade verification engine
-- Verifies syntax and logical correctness
-- Automatic error detection and correction
+┌─────────────────────────┐
+│  Natural Language Input │
+└────────────┬────────────┘
+             │
+             ▼
+┌──────────────────────────────────────────────────────────┐
+│  Phase 1: Formalization                                   │
+│  • Convert to formal structured text                     │
+│  • AI-powered semantic preservation                      │
+│  • Quality check & intelligent retry                     │
+└────────────┬─────────────────────────────────────────────┘
+             │
+             ▼
+┌──────────────────────────────────────────────────────────┐
+│  Phase 2: Logic Generation                                │
+│  • Generate SMT-LIB verification code                    │
+│  • Measure transformation accuracy                       │
+│  • Intelligent refinement loop                           │
+└────────────┬─────────────────────────────────────────────┘
+             │
+             ▼
+┌──────────────────────────────────────────────────────────┐
+│  Phase 3: Formal Verification                             │
+│  • Execute verification engine (cvc5)                    │
+│  • Validate syntax & logical correctness                 │
+│  • Auto-correction on errors                             │
+└────────────┬─────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│    Verified Output      │
+│  (sat/unsat + proof)    │
+└─────────────────────────┘
+```
 
 ## Key Features
 

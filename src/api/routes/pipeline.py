@@ -25,33 +25,43 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
     description="""
     Transform informal natural language into verified formal logic through an intelligent quality assurance pipeline.
 
-    <!-- Mermaid diagram - renders in GitHub and Swagger UI -->
     ## How It Works
 
-    ```mermaid
-    graph LR
-        A[Natural Language Input] --> B[AI-Powered Processing]
-        B --> C[Verified Output]
     ```
-
-    This endpoint executes a rigorous three-phase process with automated quality verification:
-
-    ### Phase 1: Formalization
-    - Converts informal text to formal, structured representation
-    - AI-powered analysis ensures meaning preservation
-    - Automatic quality verification and intelligent retry
-
-    ### Phase 2: Logic Generation
-    - Generates verified formal representations from structured text
-    - Includes complete variable declarations and logical assertions
-    - Continuous accuracy monitoring
-    - Intelligent refinement to ensure quality
-
-    ### Phase 3: Formal Verification
-    - Validates logic with enterprise-grade verification engine
-    - Verifies syntax and logical correctness
-    - Returns verification results (satisfiable/unsatisfiable/unknown)
-    - Automatic error detection and correction
+    ┌─────────────────────────┐
+    │  Natural Language Input │
+    └────────────┬────────────┘
+                 │
+                 ▼
+    ┌──────────────────────────────────────────────────────────┐
+    │  Phase 1: Formalization                                   │
+    │  • Convert to formal structured text                     │
+    │  • AI-powered semantic preservation                      │
+    │  • Quality check & intelligent retry                     │
+    └────────────┬─────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌──────────────────────────────────────────────────────────┐
+    │  Phase 2: Logic Generation                                │
+    │  • Generate SMT-LIB verification code                    │
+    │  • Measure transformation accuracy                       │
+    │  • Intelligent refinement loop                           │
+    └────────────┬─────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌──────────────────────────────────────────────────────────┐
+    │  Phase 3: Formal Verification                             │
+    │  • Execute verification engine (cvc5)                    │
+    │  • Validate syntax & logical correctness                 │
+    │  • Auto-correction on errors                             │
+    └────────────┬─────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────┐
+    │    Verified Output      │
+    │  (sat/unsat + proof)    │
+    └─────────────────────────┘
+    ```
 
     ## Quality Assurance
 
