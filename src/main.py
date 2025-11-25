@@ -35,39 +35,27 @@ This service provides a production-grade API for converting informal logical con
 ## How It Works
 
 ```
-┌─────────────────────────┐
-│  Natural Language Input │
-└────────────┬────────────┘
-             │
-             ▼
-┌──────────────────────────────────────────────────────────┐
-│  Phase 1: Formalization                                   │
-│  • Convert to formal structured text                     │
-│  • AI-powered semantic preservation                      │
-│  • Quality check & intelligent retry                     │
-└────────────┬─────────────────────────────────────────────┘
-             │
-             ▼
-┌──────────────────────────────────────────────────────────┐
-│  Phase 2: Logic Generation                                │
-│  • Generate SMT-LIB verification code                    │
-│  • Measure transformation accuracy                       │
-│  • Intelligent refinement loop                           │
-└────────────┬─────────────────────────────────────────────┘
-             │
-             ▼
-┌──────────────────────────────────────────────────────────┐
-│  Phase 3: Formal Verification                             │
-│  • Execute verification engine (cvc5)                    │
-│  • Validate syntax & logical correctness                 │
-│  • Auto-correction on errors                             │
-└────────────┬─────────────────────────────────────────────┘
-             │
-             ▼
-┌─────────────────────────┐
-│    Verified Output      │
-│  (sat/unsat + proof)    │
-└─────────────────────────┘
+    ┌─────────────────────────────────────┐
+    │     Natural Language Input          │
+    │  (Requirements, constraints, rules) │
+    └──────────────┬──────────────────────┘
+                   │
+                   ▼
+    ┌──────────────────────────────────────────────────┐
+    │                                                   │
+    │     AI-Powered Quality Assurance Pipeline        │
+    │                                                   │
+    │  • Intelligent semantic analysis                 │
+    │  • Automated accuracy verification               │
+    │  • Multi-stage quality gates                     │
+    │                                                   │
+    └──────────────┬───────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────┐
+    │      Verified Formal Logic          │
+    │   (Proof + satisfiability result)   │
+    └─────────────────────────────────────┘
 ```
 
 ## Key Features
