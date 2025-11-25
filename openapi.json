@@ -2,14 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Semantic-Preserving SMT-LIB Pipeline",
-    "description": "\n# Semantic-Preserving SMT-LIB Pipeline Service\n\nTransform informal natural language into verified, executable SMT-LIB code through a rigorous semantic-preserving pipeline.\n\n## Overview\n\nThis service provides a production-grade API for converting informal logical constraints into formal SMT-LIB code that can be executed by SMT solvers. It ensures semantic preservation through multiple quality gates and automatic error correction.\n\n## Pipeline Architecture\n\nThe service implements a three-step pipeline with quality verification at each stage:\n\n### 1. Formalization (\u226591% Semantic Similarity)\n- Converts informal text to formal representation using Claude AI\n- Verifies semantic preservation with embedding similarity\n- Automatic retry with increasing temperature\n- Maximum 3 attempts\n\n### 2. SMT-LIB Extraction (\u22645% Information Loss)\n- Generates annotated SMT-LIB code from formal text\n- Measures information degradation with embedding comparison\n- Automatic retry with increasing detail level\n- Maximum 5 attempts\n\n### 3. Solver Validation (Error-Free Execution)\n- Executes code with Z3 SMT solver\n- Validates syntax and logical correctness\n- Claude-powered automatic error fixing\n- Maximum 3 attempts\n\n## Key Features\n\n- **Semantic Verification**: Embedding-based similarity measurement at each step\n- **Quality Gates**: Strict thresholds ensure output quality\n- **Automatic Retry**: Intelligent retry mechanisms with adaptive parameters\n- **Error Recovery**: AI-powered error fixing for solver failures\n- **Comprehensive Metrics**: Detailed performance and quality metrics\n- **Manual Review Flags**: Identifies outputs requiring human validation\n\n## Quality Guarantees\n\n- **Formalization Similarity**: \u226591% embedding similarity\n- **Information Preservation**: \u22645% degradation allowed\n- **Solver Validation**: Must execute without errors\n- **End-to-End Testing**: All outputs verified with Z3 solver\n\n## Technology Stack\n\n- **API Framework**: FastAPI (async, high performance)\n- **AI Model**: Claude Sonnet 4.5 (Anthropic)\n- **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)\n- **SMT Solver**: Z3 (Microsoft Research)\n- **Language**: Python 3.12+ with type hints\n\n## Use Cases\n\n- Formal verification of requirements\n- Automated constraint generation\n- Natural language to logic transformation\n- SMT solver integration\n- Formal methods tooling\n\n## Documentation\n\n- **Swagger UI**: Interactive API documentation and testing\n- **ReDoc**: Alternative documentation view\n- **Examples**: Curated test cases at `/pipeline/examples`\n- **Health Check**: Service status at `/health`\n\n## Support\n\nFor issues, questions, or feature requests, please refer to the project repository.\n    ",
+    "description": "\n# Intelligent Formal Verification Service\n\nTransform natural language requirements into verified formal logic through an AI-powered quality assurance pipeline.\n\n## Overview\n\nThis service provides a production-grade API for converting informal logical constraints and business rules into formally verified representations. It ensures accuracy through multiple quality gates and automatic error correction.\n\n<!-- Mermaid diagram - renders in GitHub and Swagger UI -->\n## How It Works\n\n```mermaid\ngraph LR\n    A[Natural Language Input] --> B[AI-Powered Processing]\n    B --> C[Verified Output]\n```\n\nThe service implements an intelligent three-phase process with quality verification at each stage:\n\n### Phase 1: Formalization\n- Converts informal text to formal, structured representation\n- AI-powered analysis ensures meaning is preserved\n- Automatic quality verification and retry mechanisms\n\n### Phase 2: Logic Generation\n- Generates verified formal representations from structured text\n- Measures accuracy throughout transformation\n- Intelligent refinement to minimize information loss\n\n### Phase 3: Formal Verification\n- Validates logic with enterprise-grade verification engine\n- Verifies syntax and logical correctness\n- Automatic error detection and correction\n\n## Key Features\n\n- **Accuracy Preservation**: Advanced AI ensures meaning is maintained throughout transformation\n- **Quality Assurance**: Multiple quality gates verify output accuracy\n- **Intelligent Automation**: Automatic retry and error correction mechanisms\n- **High Reliability**: Production-tested pipeline with comprehensive validation\n- **Detailed Metrics**: Complete visibility into processing quality and performance\n\n## Use Cases\n\n- Formal verification of business requirements\n- Automated constraint validation\n- Requirements analysis and verification\n- Business rule transformation\n- Compliance and regulatory verification\n\n## Documentation\n\n- **Swagger UI**: Interactive API documentation and testing\n- **ReDoc**: Alternative documentation view\n- **Health Check**: Service status at `/health`\n\n## Support\n\nFor issues, questions, or feature requests, please refer to the project repository.\n    ",
     "contact": {
-      "name": "SMT Pipeline Team",
+      "name": "Formal Verification Team",
       "email": "support@example.com"
     },
     "license": {
-      "name": "MIT License",
-      "url": "https://opensource.org/licenses/MIT"
+      "name": "CC BY-NC-ND 4.0",
+      "url": "https://creativecommons.org/licenses/by-nc-nd/4.0/"
     },
     "version": "0.1.0"
   },
@@ -20,8 +20,8 @@
           "pipeline",
           "Pipeline Processing"
         ],
-        "summary": "Process informal text to verified SMT-LIB output",
-        "description": "Transform informal natural language into verified, executable SMT-LIB code through a semantic-preserving pipeline.\n\n    ## Pipeline Overview\n\n    This endpoint executes a rigorous three-step process with quality gates at each stage:\n\n    ### Step 1: Formalization\n    - Converts informal text to formal, structured representation\n    - Uses Claude AI with semantic embeddings for verification\n    - **Quality Gate**: \u226591% embedding similarity required\n    - Automatic retry with increasing temperature if threshold not met\n    - Maximum 3 attempts before failure\n\n    ### Step 2: SMT-LIB Extraction\n    - Generates annotated SMT-LIB code from formal text\n    - Includes variable declarations, assertions, and solver commands\n    - **Quality Gate**: \u22645% information degradation allowed\n    - Automatic retry with increasing detail level if threshold exceeded\n    - Maximum 5 attempts before failure\n\n    ### Step 3: Solver Validation\n    - Executes generated code with Z3 SMT solver\n    - Validates syntax and logical correctness\n    - Captures solver results (sat/unsat/unknown)\n    - **Quality Gate**: Must execute without errors\n    - Automatic retry with Claude-powered error fixing if needed\n    - Maximum 3 attempts before failure\n\n    ## Quality Assurance\n\n    - All outputs meet strict quality thresholds\n    - Semantic similarity verified with embeddings\n    - Information preservation measured at each step\n    - Solver execution confirms syntactic and logical correctness\n    - Manual review flagged for edge cases\n\n    ## Performance\n\n    - Typical processing time: 3-10 seconds\n    - Depends on text complexity and retry attempts\n    - Detailed metrics returned in response\n\n    ## Example Request\n\n    ```json\n    {\n      \"informal_text\": \"x must be greater than 5 and less than 10\"\n    }\n    ```\n\n    ## Example Success Response (200)\n\n    ```json\n    {\n      \"informal_text\": \"x must be greater than 5 and less than 10\",\n      \"formal_text\": \"The integer variable x must satisfy: x > 5 AND x < 10\",\n      \"formalization_similarity\": 0.95,\n      \"smt_lib_code\": \"(declare-const x Int)\\n(assert (> x 5))\\n(assert (< x 10))\\n(check-sat)\\n(get-model)\",\n      \"extraction_degradation\": 0.03,\n      \"check_sat_result\": \"sat\",\n      \"model\": \"((x 7))\",\n      \"unsat_core\": null,\n      \"solver_success\": true,\n      \"metrics\": { ... },\n      \"passed_all_checks\": true,\n      \"requires_manual_review\": false\n    }\n    ```\n\n    ## Error Scenarios\n\n    - **422 Unprocessable Entity**: Pipeline processing failed at one of the three steps\n    - **500 Internal Server Error**: Unexpected system error (API failures, etc.)",
+        "summary": "Process informal text to verified formal logic",
+        "description": "Transform informal natural language into verified formal logic through an intelligent quality assurance pipeline.\n\n    <!-- Mermaid diagram - renders in GitHub and Swagger UI -->\n    ## How It Works\n\n    ```mermaid\n    graph LR\n        A[Natural Language Input] --> B[AI-Powered Processing]\n        B --> C[Verified Output]\n    ```\n\n    This endpoint executes a rigorous three-phase process with automated quality verification:\n\n    ### Phase 1: Formalization\n    - Converts informal text to formal, structured representation\n    - AI-powered analysis ensures meaning preservation\n    - Automatic quality verification and intelligent retry\n\n    ### Phase 2: Logic Generation\n    - Generates verified formal representations from structured text\n    - Includes complete variable declarations and logical assertions\n    - Continuous accuracy monitoring\n    - Intelligent refinement to ensure quality\n\n    ### Phase 3: Formal Verification\n    - Validates logic with enterprise-grade verification engine\n    - Verifies syntax and logical correctness\n    - Returns verification results (satisfiable/unsatisfiable/unknown)\n    - Automatic error detection and correction\n\n    ## Quality Assurance\n\n    - Multiple quality gates throughout the pipeline\n    - Accuracy preservation verified at each phase\n    - Automated quality checks and validation\n    - Comprehensive quality metrics in response\n\n    ## Performance\n\n    - Typical processing time: 3-10 seconds\n    - Depends on text complexity and retry attempts\n    - Detailed metrics returned in response\n\n    ## Example Request\n\n    ```json\n    {\n      \"informal_text\": \"x must be greater than 5 and less than 10\"\n    }\n    ```\n\n    ## Example Success Response (200)\n\n    ```json\n    {\n      \"informal_text\": \"x must be greater than 5 and less than 10\",\n      \"formal_text\": \"The integer variable x must satisfy: x > 5 AND x < 10\",\n      \"formalization_similarity\": 0.95,\n      \"smt_lib_code\": \"(declare-const x Int)\\n(assert (> x 5))\\n(assert (< x 10))\\n(check-sat)\\n(get-model)\",\n      \"extraction_degradation\": 0.03,\n      \"check_sat_result\": \"sat\",\n      \"model\": \"((x 7))\",\n      \"unsat_core\": null,\n      \"solver_success\": true,\n      \"proof\": {\n        \"raw_output\": \"(sat)\\n((x 7))\",\n        \"summary\": \"Verification successful: Found satisfying assignment where x=7\"\n      },\n      \"metrics\": { ... },\n      \"passed_all_checks\": true\n    }\n    ```\n\n    ## Error Scenarios\n\n    - **422 Unprocessable Entity**: Pipeline processing failed at one of the three phases\n    - **500 Internal Server Error**: Unexpected system error (API failures, etc.)",
         "operationId": "process_informal_text_pipeline_process_post",
         "requestBody": {
           "content": {
@@ -35,7 +35,7 @@
         },
         "responses": {
           "200": {
-            "description": "Successfully processed text through all three pipeline steps",
+            "description": "Successfully processed text through all three pipeline phases",
             "content": {
               "application/json": {
                 "schema": {
@@ -62,14 +62,13 @@
                     "total_time_seconds": 3.0,
                     "success": true
                   },
-                  "passed_all_checks": true,
-                  "requires_manual_review": false
+                  "passed_all_checks": true
                 }
               }
             }
           },
           "422": {
-            "description": "Pipeline processing failed at formalization, extraction, or validation step",
+            "description": "Pipeline processing failed at formalization, extraction, or validation phase",
             "content": {
               "application/json": {
                 "schema": {
@@ -77,36 +76,32 @@
                 },
                 "examples": {
                   "formalization_failure": {
-                    "summary": "Formalization failed to meet similarity threshold",
+                    "summary": "Formalization failed to meet quality threshold",
                     "value": {
-                      "error": "Formalization failed: Could not achieve required similarity threshold after 3 attempts",
+                      "error": "Formalization failed: Could not achieve required semantic similarity threshold",
                       "details": {
                         "step": "formalization",
-                        "attempts": 3,
-                        "final_similarity": 0.89,
-                        "threshold": 0.91
+                        "message": "Quality threshold not met after multiple attempts"
                       }
                     }
                   },
                   "extraction_failure": {
-                    "summary": "Extraction exceeded degradation threshold",
+                    "summary": "Logic generation failed quality check",
                     "value": {
-                      "error": "Extraction failed: Information degradation too high after 5 attempts",
+                      "error": "Logic generation failed: Accuracy preservation below acceptable threshold",
                       "details": {
                         "step": "extraction",
-                        "attempts": 5,
-                        "final_degradation": 0.08,
-                        "threshold": 0.05
+                        "message": "Quality threshold not met after refinement attempts"
                       }
                     }
                   },
                   "validation_failure": {
-                    "summary": "Solver validation failed with syntax error",
+                    "summary": "Formal verification failed",
                     "value": {
-                      "error": "Validation failed: SMT solver execution error after 3 attempts",
+                      "error": "Formal verification failed: Syntax error detected in generated logic",
                       "details": {
                         "step": "validation",
-                        "solver_output": "Parse error at line 3: unexpected token"
+                        "message": "Verification engine detected syntax error"
                       }
                     }
                   }
@@ -130,57 +125,13 @@
         }
       }
     },
-    "/pipeline/examples": {
-      "get": {
-        "tags": [
-          "pipeline",
-          "Pipeline Processing"
-        ],
-        "summary": "Get example informal texts for testing the pipeline",
-        "description": "Retrieve a curated list of example informal text inputs for testing the pipeline.\n\n    These examples cover various complexity levels and constraint types:\n    - Simple numeric constraints\n    - Multiple variable relationships\n    - Conditional logic\n    - Edge cases and boundary conditions\n\n    Each example includes:\n    - `text`: The informal text suitable for the /process endpoint\n    - `description`: What the example demonstrates\n    - `expected_result`: Expected check-sat outcome (sat/unsat)\n\n    Use these examples to:\n    - Test the pipeline functionality\n    - Understand what inputs work well\n    - Learn SMT-LIB constraint patterns\n    - Validate API integration\n\n    ## Example Response\n\n    ```json\n    [\n      {\n        \"text\": \"x must be greater than 5 and less than 10\",\n        \"description\": \"Simple range constraint\",\n        \"expected_result\": \"sat\"\n      },\n      {\n        \"text\": \"x must be greater than 10 and less than 5\",\n        \"description\": \"Unsatisfiable constraint\",\n        \"expected_result\": \"unsat\"\n      }\n    ]\n    ```",
-        "operationId": "get_examples_pipeline_examples_get",
-        "responses": {
-          "200": {
-            "description": "List of example texts with descriptions and expected outcomes",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "type": "object"
-                  },
-                  "type": "array",
-                  "title": "Response Get Examples Pipeline Examples Get"
-                },
-                "example": [
-                  {
-                    "text": "x must be greater than 5 and less than 10",
-                    "description": "Simple satisfiable range constraint on integer variable",
-                    "expected_result": "sat"
-                  },
-                  {
-                    "text": "x must be greater than 10 and less than 5",
-                    "description": "Unsatisfiable constraint (impossible range)",
-                    "expected_result": "unsat"
-                  },
-                  {
-                    "text": "the sum of a and b must equal 10",
-                    "description": "Arithmetic relationship between two variables",
-                    "expected_result": "sat"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
     "/health": {
       "get": {
         "tags": [
           "Health & Status"
         ],
         "summary": "Service health check",
-        "description": "Check the health and status of the SMT Pipeline service.\n\n    Returns basic service information including:\n    - **status**: Current service health (healthy/degraded/unhealthy)\n    - **service**: Service name\n    - **version**: Current API version\n    - **model**: AI model being used (Claude version)\n    - **embedding_model**: Embedding model for semantic comparison\n\n    Use this endpoint for:\n    - Service monitoring and alerting\n    - Load balancer health checks\n    - Deployment verification\n    - Status page integration\n\n    ## Example Response\n\n    ```json\n    {\n      \"status\": \"healthy\",\n      \"service\": \"Semantic-Preserving SMT-LIB Pipeline\",\n      \"version\": \"0.1.0\",\n      \"model\": \"claude-sonnet-4-5-20250929\",\n      \"embedding_model\": \"sentence-transformers/all-MiniLM-L6-v2\"\n    }\n    ```",
+        "description": "Check the health and status of the Formal Verification service.\n\n    Returns basic service information including:\n    - **status**: Current service health (healthy/degraded/unhealthy)\n    - **service**: Service name\n    - **version**: Current API version\n\n    Use this endpoint for:\n    - Service monitoring and alerting\n    - Load balancer health checks\n    - Deployment verification\n    - Status page integration\n\n    ## Example Response\n\n    ```json\n    {\n      \"status\": \"healthy\",\n      \"service\": \"Formal Symbolic Verification\",\n      \"version\": \"0.1.0\"\n    }\n    ```",
         "operationId": "health_check_health_get",
         "responses": {
           "200": {
@@ -190,10 +141,8 @@
                 "schema": {},
                 "example": {
                   "status": "healthy",
-                  "service": "Semantic-Preserving SMT-LIB Pipeline",
-                  "version": "0.1.0",
-                  "model": "claude-sonnet-4-5-20250929",
-                  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+                  "service": "Intelligent Formal Verification",
+                  "version": "0.1.0"
                 }
               }
             }
@@ -209,11 +158,11 @@
           "error": {
             "type": "string",
             "title": "Error",
-            "description": "Human-readable error message describing what went wrong. Includes the pipeline step that failed (formalization/extraction/validation) and the specific reason for failure.",
+            "description": "Human-readable error message describing what went wrong. Includes the pipeline step that failed and the reason for failure.",
             "examples": [
-              "Formalization failed: Could not achieve required similarity threshold (0.89 < 0.91)",
-              "Extraction failed: Information degradation too high (0.08 > 0.05)",
-              "Validation failed: SMT solver execution error - syntax error on line 3"
+              "Formalization failed: Could not achieve required semantic similarity threshold",
+              "Symbolic logic generation failed: Information preservation below acceptable threshold",
+              "Formal verification failed: Syntax error detected in generated logic"
             ]
           },
           "details": {
@@ -258,7 +207,7 @@
               "solver_output": "Parse error at line 3: unexpected token ','",
               "step": "validation"
             },
-            "error": "Validation failed: SMT solver syntax error"
+            "error": "Formal verification failed: Syntax error detected in logic"
           }
         ]
       },
@@ -267,9 +216,9 @@
           "formalization_attempts": {
             "type": "integer",
             "maximum": 10.0,
-            "minimum": 1.0,
+            "minimum": 0.0,
             "title": "Formalization Attempts",
-            "description": "Number of attempts required to achieve formalization similarity threshold (1-10)"
+            "description": "Number of attempts required to achieve formalization similarity threshold (0=skipped, 1-10=actual attempts)"
           },
           "final_formalization_similarity": {
             "type": "number",
@@ -349,7 +298,7 @@
         "properties": {
           "informal_text": {
             "type": "string",
-            "maxLength": 10000,
+            "maxLength": 100000,
             "minLength": 1,
             "title": "Informal Text",
             "description": "Informal natural language text containing logical constraints or rules to process. Should describe conditions, relationships, or requirements that can be formalized. Examples: 'x must be greater than 5', 'the sum of a and b equals 10', 'all employees must have a valid ID number'",
@@ -358,6 +307,18 @@
               "the sum of a and b must equal 10",
               "if x is even then y must be odd"
             ]
+          },
+          "skip_formalization": {
+            "type": "boolean",
+            "title": "Skip Formalization",
+            "description": "Skip formalization step and treat input as already formal. Useful for simple expressions like 'x > 5' that don't need AI processing. The service automatically skips formalization for very short inputs, but this flag allows explicit control.",
+            "default": false
+          },
+          "enrich": {
+            "type": "boolean",
+            "title": "Enrich",
+            "description": "Enable web search enrichment before processing. When enabled, the service will use web search to gather domain-specific definitions, context, and clarifications before running the main pipeline. Useful for inputs containing domain-specific terminology or ambiguous references.",
+            "default": false
           }
         },
         "type": "object",
@@ -365,7 +326,7 @@
           "informal_text"
         ],
         "title": "ProcessRequest",
-        "description": "Request model for processing informal text through the semantic-preserving pipeline.\n\nThe informal text will be transformed through three rigorous steps:\n1. **Formalization**: Converts informal text to formal representation (\u226591% semantic similarity required)\n2. **SMT-LIB Extraction**: Generates annotated SMT-LIB code (\u22645% information loss allowed)\n3. **Solver Validation**: Executes with Z3 solver to verify correctness (must produce valid output)\n\nEach step includes automatic retry mechanisms with increasing temperature/detail\nto ensure quality thresholds are met.",
+        "description": "Request model for processing informal text through the formal verification pipeline.\n\nThe informal text will be transformed through three rigorous steps:\n1. **Formalization**: Converts informal text to formal representation with semantic preservation\n2. **Symbolic Logic Generation**: Generates verified symbolic representations with accuracy validation\n3. **Formal Verification**: Validates logic with verification engine to ensure correctness\n\nEach step includes automatic quality verification and intelligent retry mechanisms.",
         "examples": [
           {
             "informal_text": "x must be greater than 5 and less than 10"
@@ -375,6 +336,10 @@
           },
           {
             "informal_text": "if x is positive then y must be negative"
+          },
+          {
+            "informal_text": "x > 5",
+            "skip_formalization": true
           }
         ]
       },
@@ -384,6 +349,51 @@
             "type": "string",
             "title": "Informal Text",
             "description": "The original informal natural language text that was processed"
+          },
+          "enrichment_performed": {
+            "type": "boolean",
+            "title": "Enrichment Performed",
+            "description": "Whether web search enrichment was performed on the input",
+            "default": false
+          },
+          "enrichment_search_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrichment Search Count",
+            "description": "Number of web searches performed during enrichment (if enabled)"
+          },
+          "enrichment_sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrichment Sources",
+            "description": "URLs of sources used for enrichment (if enabled)"
+          },
+          "enrichment_time_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrichment Time Seconds",
+            "description": "Time spent on enrichment in seconds (if enabled)"
           },
           "formal_text": {
             "type": "string",
@@ -398,7 +408,7 @@
             "maximum": 1.0,
             "minimum": 0.0,
             "title": "Formalization Similarity",
-            "description": "Cosine similarity score between informal and formal text embeddings. Measures semantic preservation. Threshold: \u22650.91 required for acceptance. Range: 0.0 (completely different) to 1.0 (semantically identical).",
+            "description": "Semantic similarity score between informal and formal text. Measures how well the original meaning was preserved. Range: 0.0 (low similarity) to 1.0 (high similarity). Higher values indicate better semantic preservation.",
             "examples": [
               0.95
             ]
@@ -406,7 +416,7 @@
           "smt_lib_code": {
             "type": "string",
             "title": "Smt Lib Code",
-            "description": "Complete annotated SMT-LIB code that can be executed by Z3 solver. Includes variable declarations, assertions, and solver commands. Contains inline comments explaining the formalization.",
+            "description": "Complete symbolic logic representation that can be verified by formal verification engine. Includes variable declarations, assertions, and verification commands. Contains inline comments explaining the formalization.",
             "examples": [
               "(declare-const x Int)\n(assert (> x 5))\n(assert (< x 10))\n(check-sat)\n(get-model)"
             ]
@@ -416,7 +426,7 @@
             "maximum": 1.0,
             "minimum": 0.0,
             "title": "Extraction Degradation",
-            "description": "Information degradation score from formal text to SMT-LIB code. Measures information loss during extraction. Threshold: \u22640.05 required for acceptance. Range: 0.0 (no information lost) to 1.0 (complete information loss).",
+            "description": "Information preservation score during symbolic logic generation. Measures how accurately information was transformed. Range: 0.0 (perfect preservation) to 1.0 (significant loss). Lower values indicate better information retention.",
             "examples": [
               0.03
             ]
@@ -424,7 +434,7 @@
           "check_sat_result": {
             "type": "string",
             "title": "Check Sat Result",
-            "description": "Result from SMT solver's (check-sat) command. Possible values: 'sat' (satisfiable - solution exists), 'unsat' (unsatisfiable - no solution possible), 'unknown' (solver could not determine), or an error message if execution failed.",
+            "description": "Result from formal verification engine. Possible values: 'sat' (satisfiable - solution exists), 'unsat' (unsatisfiable - no solution possible), 'unknown' (engine could not determine), or an error message if verification failed.",
             "examples": [
               "sat"
             ]
@@ -459,9 +469,27 @@
           "solver_success": {
             "type": "boolean",
             "title": "Solver Success",
-            "description": "Whether the SMT solver executed successfully without errors. True means the solver ran and produced a valid result (sat/unsat/unknown). False means there were execution errors (syntax errors, timeouts, etc.).",
+            "description": "Whether the formal verification engine executed successfully without errors. True means verification ran and produced a valid result (sat/unsat/unknown). False means there were execution errors (syntax errors, timeouts, etc.).",
             "examples": [
               true
+            ]
+          },
+          "proof": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proof",
+            "description": "Verification proof from the formal verification engine. Contains both raw solver output and human-readable summary. Enables external verification and auditing of results.",
+            "examples": [
+              {
+                "raw_output": "(sat)\n((x 7))",
+                "summary": "Verification successful: Found satisfying assignment where x=7"
+              }
             ]
           },
           "metrics": {
@@ -471,17 +499,9 @@
           "passed_all_checks": {
             "type": "boolean",
             "title": "Passed All Checks",
-            "description": "Whether all quality thresholds were met across all three steps. True means: formalization_similarity \u2265 0.91, extraction_degradation \u2264 0.05, and solver executed successfully. False means at least one threshold was not met (though processing may have continued).",
+            "description": "Whether all quality thresholds were met across all three steps. True means all automated quality checks passed successfully. False means at least one quality threshold was not met.",
             "examples": [
               true
-            ]
-          },
-          "requires_manual_review": {
-            "type": "boolean",
-            "title": "Requires Manual Review",
-            "description": "Whether this output should be manually reviewed by a human. Triggered when: quality scores are close to thresholds, multiple retry attempts were needed, or other risk indicators are present. True does not mean the output is incorrect, just that extra caution is advised.",
-            "examples": [
-              false
             ]
           }
         },
@@ -495,11 +515,10 @@
           "check_sat_result",
           "solver_success",
           "metrics",
-          "passed_all_checks",
-          "requires_manual_review"
+          "passed_all_checks"
         ],
         "title": "ProcessResponse",
-        "description": "Response model containing complete verified output from the semantic-preserving pipeline.\n\nThis response includes outputs from all three pipeline steps, performance metrics,\nand quality indicators. All outputs have been verified to meet semantic similarity\nand information preservation thresholds.",
+        "description": "Response model containing complete verified output from the formal verification pipeline.\n\nThis response includes outputs from all three pipeline steps, performance metrics,\nand quality indicators. All outputs have been verified to meet semantic similarity\nand information preservation thresholds.",
         "examples": [
           {
             "check_sat_result": "sat",
@@ -521,7 +540,10 @@
             },
             "model": "((x 7))",
             "passed_all_checks": true,
-            "requires_manual_review": false,
+            "proof": {
+              "raw_output": "(sat)\n((x 7))",
+              "summary": "Verification successful: Found satisfying assignment where x=7"
+            },
             "smt_lib_code": "; Formalization: The integer variable x must satisfy: x > 5 AND x < 10\n(declare-const x Int)\n(assert (> x 5))\n(assert (< x 10))\n(check-sat)\n(get-model)",
             "solver_success": true
           }
@@ -532,7 +554,7 @@
   "tags": [
     {
       "name": "Pipeline Processing",
-      "description": "Core pipeline endpoints for processing informal text to SMT-LIB code"
+      "description": "Core pipeline endpoints for processing informal text to verified symbolic logic"
     },
     {
       "name": "Health & Status",

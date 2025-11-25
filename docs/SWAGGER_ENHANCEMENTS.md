@@ -103,7 +103,7 @@ Enhanced with:
   - Use cases
   - Documentation links
 - Contact information (name, email)
-- License information (MIT)
+- License information (CC BY-NC-ND 4.0)
 - OpenAPI tags configuration:
   - "Pipeline Processing" - Core endpoints
   - "Health & Status" - System endpoints

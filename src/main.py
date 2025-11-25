@@ -24,36 +24,43 @@ app = FastAPI(
     title=settings.api_title,
     version=settings.api_version,
     description="""
-# Formal Symbolic Verification Service
+# Intelligent Formal Verification Service
 
-Transform natural language requirements into verified symbolic logic through an AI-powered semantic-preserving pipeline.
+Transform natural language requirements into verified formal logic through an AI-powered quality assurance pipeline.
 
 ## Overview
 
-This service provides a production-grade API for converting informal logical constraints and business rules into formally verified symbolic representations. It ensures semantic preservation through multiple quality gates and automatic error correction.
+This service provides a production-grade API for converting informal logical constraints and business rules into formally verified representations. It ensures accuracy through multiple quality gates and automatic error correction.
 
+<!-- Mermaid diagram - renders in GitHub and Swagger UI -->
 ## How It Works
 
-The service implements an intelligent three-step pipeline with quality verification at each stage:
+```mermaid
+graph LR
+    A[Natural Language Input] --> B[AI-Powered Processing]
+    B --> C[Verified Output]
+```
 
-### 1. Formalization
+The service implements an intelligent three-phase process with quality verification at each stage:
+
+### Phase 1: Formalization
 - Converts informal text to formal, structured representation
-- AI-powered semantic analysis ensures meaning is preserved
+- AI-powered analysis ensures meaning is preserved
 - Automatic quality verification and retry mechanisms
 
-### 2. Symbolic Logic Generation
-- Generates verified symbolic representations from formal text
-- Measures information preservation throughout transformation
+### Phase 2: Logic Generation
+- Generates verified formal representations from structured text
+- Measures accuracy throughout transformation
 - Intelligent refinement to minimize information loss
 
-### 3. Formal Verification
+### Phase 3: Formal Verification
 - Validates logic with enterprise-grade verification engine
 - Verifies syntax and logical correctness
 - Automatic error detection and correction
 
 ## Key Features
 
-- **Semantic Preservation**: Advanced AI ensures meaning is maintained throughout transformation
+- **Accuracy Preservation**: Advanced AI ensures meaning is maintained throughout transformation
 - **Quality Assurance**: Multiple quality gates verify output accuracy
 - **Intelligent Automation**: Automatic retry and error correction mechanisms
 - **High Reliability**: Production-tested pipeline with comprehensive validation
@@ -84,8 +91,8 @@ For issues, questions, or feature requests, please refer to the project reposito
         "email": "support@example.com",
     },
     license_info={
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT",
+        "name": "CC BY-NC-ND 4.0",
+        "url": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
     },
     openapi_tags=[
         {
@@ -152,7 +159,7 @@ async def root():
                 "application/json": {
                     "example": {
                         "status": "healthy",
-                        "service": "Formal Symbolic Verification",
+                        "service": "Intelligent Formal Verification",
                         "version": "0.1.0",
                     }
                 }

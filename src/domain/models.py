@@ -204,6 +204,14 @@ class VerifiedOutput(BaseModel):
     )
     solver_success: bool = Field(description="Whether solver executed successfully")
 
+    # Proof data
+    proof_raw_output: str | None = Field(
+        default=None, description="Complete raw output from verification engine"
+    )
+    proof_summary: str | None = Field(
+        default=None, description="Human-readable verification summary"
+    )
+
     # Metrics
     metrics: PipelineMetrics = Field(description="Performance and quality metrics")
 

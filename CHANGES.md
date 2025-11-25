@@ -73,7 +73,7 @@ Comprehensive enhancement of Swagger/OpenAPI documentation for production readin
   - Added technology stack information
   - Added use cases
   - Added contact information (name, email)
-  - Added license information (MIT)
+  - Added license information (CC BY-NC-ND 4.0)
   - Configured `openapi_tags` for endpoint grouping
 
 - Enhanced `GET /health` endpoint:

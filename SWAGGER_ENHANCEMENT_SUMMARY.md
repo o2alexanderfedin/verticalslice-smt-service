@@ -83,7 +83,7 @@ The Swagger/OpenAPI documentation for the SMT Pipeline service has been successf
 - ✅ Technology stack documented
 - ✅ Use cases provided
 - ✅ Contact information (name, email)
-- ✅ License information (MIT)
+- ✅ License information (CC BY-NC-ND 4.0)
 - ✅ OpenAPI tags configured
 
 #### GET /health

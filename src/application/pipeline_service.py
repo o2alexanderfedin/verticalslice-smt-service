@@ -204,6 +204,9 @@ class PipelineService:
             success=True,
         )
 
+        # Build proof summary
+        proof_summary = self._build_proof_summary(solver_output)
+
         # Build final verified output
         verified_output = VerifiedOutput(
             informal_text=informal_text,
@@ -221,6 +224,8 @@ class PipelineService:
             model=solver_output.model,
             unsat_core=solver_output.unsat_core,
             solver_success=solver_output.success,
+            proof_raw_output=solver_output.raw_output,
+            proof_summary=proof_summary,
             metrics=metrics,
             passed_all_checks=True,
         )
@@ -228,3 +233,27 @@ class PipelineService:
         logger.info(f"Pipeline completed successfully in {total_time:.2f}s")
 
         return Ok(verified_output)
+
+    def _build_proof_summary(self, solver_output) -> str:
+        """Build human-readable verification summary from solver output.
+
+        Args:
+            solver_output: SolverResult from validation step
+
+        Returns:
+            Human-readable summary of verification results
+        """
+        result = solver_output.check_sat_result
+
+        if result == "sat":
+            if solver_output.model:
+                return f"Verification successful: Found satisfying assignment {solver_output.model}"
+            return "Verification successful: Formula is satisfiable"
+        elif result == "unsat":
+            if solver_output.unsat_core:
+                return f"Verification failed: Formula is unsatisfiable. Core: {solver_output.unsat_core}"
+            return "Verification failed: Formula is unsatisfiable (no solution exists)"
+        elif result == "unknown":
+            return "Verification inconclusive: Solver could not determine satisfiability"
+        else:
+            return f"Verification result: {result}"

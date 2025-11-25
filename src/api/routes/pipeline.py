@@ -21,26 +21,33 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
     "/process",
     response_model=ProcessResponse,
     status_code=200,
-    summary="Process informal text to verified symbolic logic",
+    summary="Process informal text to verified formal logic",
     description="""
-    Transform informal natural language into verified symbolic logic through an intelligent semantic-preserving pipeline.
+    Transform informal natural language into verified formal logic through an intelligent quality assurance pipeline.
 
+    <!-- Mermaid diagram - renders in GitHub and Swagger UI -->
     ## How It Works
 
-    This endpoint executes a rigorous three-step process with automated quality verification:
+    ```mermaid
+    graph LR
+        A[Natural Language Input] --> B[AI-Powered Processing]
+        B --> C[Verified Output]
+    ```
 
-    ### Step 1: Formalization
+    This endpoint executes a rigorous three-phase process with automated quality verification:
+
+    ### Phase 1: Formalization
     - Converts informal text to formal, structured representation
-    - AI-powered semantic analysis ensures meaning preservation
+    - AI-powered analysis ensures meaning preservation
     - Automatic quality verification and intelligent retry
 
-    ### Step 2: Symbolic Logic Generation
-    - Generates verified symbolic representations from formal text
+    ### Phase 2: Logic Generation
+    - Generates verified formal representations from structured text
     - Includes complete variable declarations and logical assertions
-    - Continuous information preservation monitoring
-    - Intelligent refinement to ensure accuracy
+    - Continuous accuracy monitoring
+    - Intelligent refinement to ensure quality
 
-    ### Step 3: Formal Verification
+    ### Phase 3: Formal Verification
     - Validates logic with enterprise-grade verification engine
     - Verifies syntax and logical correctness
     - Returns verification results (satisfiable/unsatisfiable/unknown)
@@ -49,8 +56,8 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
     ## Quality Assurance
 
     - Multiple quality gates throughout the pipeline
-    - Semantic preservation verified at each step
-    - Automated accuracy checks and validation
+    - Accuracy preservation verified at each phase
+    - Automated quality checks and validation
     - Comprehensive quality metrics in response
 
     ## Performance
@@ -80,6 +87,10 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
       "model": "((x 7))",
       "unsat_core": null,
       "solver_success": true,
+      "proof": {
+        "raw_output": "(sat)\\n((x 7))",
+        "summary": "Verification successful: Found satisfying assignment where x=7"
+      },
       "metrics": { ... },
       "passed_all_checks": true
     }
@@ -87,12 +98,12 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
     ## Error Scenarios
 
-    - **422 Unprocessable Entity**: Pipeline processing failed at one of the three steps
+    - **422 Unprocessable Entity**: Pipeline processing failed at one of the three phases
     - **500 Internal Server Error**: Unexpected system error (API failures, etc.)
     """,
     responses={
         200: {
-            "description": "Successfully processed text through all three pipeline steps",
+            "description": "Successfully processed text through all three pipeline phases",
             "content": {
                 "application/json": {
                     "example": {
@@ -124,7 +135,7 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
         },
         422: {
             "model": ErrorResponse,
-            "description": "Pipeline processing failed at formalization, extraction, or validation step",
+            "description": "Pipeline processing failed at formalization, extraction, or validation phase",
             "content": {
                 "application/json": {
                     "examples": {
@@ -139,9 +150,9 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
                             },
                         },
                         "extraction_failure": {
-                            "summary": "Symbolic logic generation failed quality check",
+                            "summary": "Logic generation failed quality check",
                             "value": {
-                                "error": "Symbolic logic generation failed: Information preservation below acceptable threshold",
+                                "error": "Logic generation failed: Accuracy preservation below acceptable threshold",
                                 "details": {
                                     "step": "extraction",
                                     "message": "Quality threshold not met after refinement attempts",
@@ -180,10 +191,10 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 async def process_informal_text(
     request: ProcessRequest, pipeline_service: PipelineService = Depends(get_pipeline_service)
 ) -> ProcessResponse:
-    """Process informal text through the complete semantic-preserving pipeline.
+    """Process informal text through the complete quality-assured pipeline.
 
-    Executes all three steps (formalization, symbolic logic generation, formal verification)
-    with quality verification at each stage. Returns verified symbolic logic that has been
+    Executes all three phases (formalization, logic generation, formal verification)
+    with quality verification at each stage. Returns verified formal logic that has been
     validated by the formal verification engine.
 
     Args:
@@ -191,10 +202,10 @@ async def process_informal_text(
         pipeline_service: Injected PipelineService instance for processing
 
     Returns:
-        ProcessResponse with verified symbolic logic, quality metrics, and verification results
+        ProcessResponse with verified formal logic, quality metrics, and verification results
 
     Raises:
-        HTTPException: 422 if pipeline processing fails at any step
+        HTTPException: 422 if pipeline processing fails at any phase
         HTTPException: 500 for unexpected system errors
     """
     logger.info(f"Processing request (text_length={len(request.informal_text)})")

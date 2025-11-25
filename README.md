@@ -1,7 +1,7 @@
 # AI Software Engineering Template
 
 [![GitHub Template](https://img.shields.io/badge/template-Use%20this%20template-brightgreen)](https://github.com/o2alexanderfedin/ai-swe-template/generate)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-blue.svg)](LICENSE)
 [![AI SWE](https://img.shields.io/badge/AI-Software%20Engineering-purple)](AI_SWE_article.md)
 [![Setup Time](https://img.shields.io/badge/setup-2%20minutes-green)]()
 [![Languages](https://img.shields.io/badge/languages-Python%20%7C%20JS%20%7C%20Go%20%7C%20Rust-blue)]()

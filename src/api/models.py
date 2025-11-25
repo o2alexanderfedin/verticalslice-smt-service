@@ -182,6 +182,22 @@ class ProcessResponse(BaseModel):
         examples=[True],
     )
 
+    # Proof data
+    proof: dict | None = Field(
+        default=None,
+        description=(
+            "Verification proof from the formal verification engine. "
+            "Contains both raw solver output and human-readable summary. "
+            "Enables external verification and auditing of results."
+        ),
+        examples=[
+            {
+                "raw_output": "(sat)\n((x 7))",
+                "summary": "Verification successful: Found satisfying assignment where x=7",
+            }
+        ],
+    )
+
     # Metrics
     metrics: PipelineMetrics = Field(
         description=(
@@ -214,6 +230,10 @@ class ProcessResponse(BaseModel):
                     "model": "((x 7))",
                     "unsat_core": None,
                     "solver_success": True,
+                    "proof": {
+                        "raw_output": "(sat)\n((x 7))",
+                        "summary": "Verification successful: Found satisfying assignment where x=7",
+                    },
                     "metrics": {
                         "formalization_attempts": 1,
                         "final_formalization_similarity": 0.95,
@@ -242,6 +262,14 @@ class ProcessResponse(BaseModel):
         Returns:
             API ProcessResponse model
         """
+        # Construct proof dict if raw output is available
+        proof: dict | None = None
+        if output.proof_raw_output is not None:
+            proof = {
+                "raw_output": output.proof_raw_output,
+                "summary": output.proof_summary or "Verification completed",
+            }
+
         return cls(
             informal_text=output.informal_text,
             enrichment_performed=output.enrichment_performed,
@@ -256,6 +284,7 @@ class ProcessResponse(BaseModel):
             model=output.model,
             unsat_core=output.unsat_core,
             solver_success=output.solver_success,
+            proof=proof,
             metrics=output.metrics,
             passed_all_checks=output.passed_all_checks,
         )
