@@ -106,10 +106,10 @@ jobs:
         run: |
           if [ "${{ inputs.run_integration_tests }}" = "true" ]; then
             echo "Running ALL tests including integration tests (expensive!)..."
-            pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 || [ $? -eq 5 ]
+            pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 --ignore=tests/manual/ || [ $? -eq 5 ]
           else
-            echo "Running unit tests only (skipping integration tests to reduce costs)..."
-            pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 --ignore=tests/integration/ || [ $? -eq 5 ]
+            echo "Running unit tests only (skipping integration and manual tests)..."
+            pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 --ignore=tests/integration/ --ignore=tests/manual/ || [ $? -eq 5 ]
           fi
 
       - name: Upload coverage reports
