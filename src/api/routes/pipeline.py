@@ -23,41 +23,35 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
     status_code=200,
     summary="Process informal text to verified symbolic logic",
     description="""
-    Transform informal natural language into verified symbolic logic through an AI-powered semantic-preserving pipeline.
+    Transform informal natural language into verified symbolic logic through an intelligent semantic-preserving pipeline.
 
-    ## Pipeline Overview
+    ## How It Works
 
-    This endpoint executes a rigorous three-step process with quality gates at each stage:
+    This endpoint executes a rigorous three-step process with automated quality verification:
 
     ### Step 1: Formalization
     - Converts informal text to formal, structured representation
-    - Uses Claude AI with semantic embeddings for verification
-    - **Quality Gate**: ≥91% embedding similarity required
-    - Automatic retry with increasing temperature if threshold not met
-    - Maximum 3 attempts before failure
+    - AI-powered semantic analysis ensures meaning preservation
+    - Automatic quality verification and intelligent retry
 
     ### Step 2: Symbolic Logic Generation
     - Generates verified symbolic representations from formal text
-    - Includes variable declarations, assertions, and verification commands
-    - **Quality Gate**: ≤5% information degradation allowed
-    - Automatic retry with increasing detail level if threshold exceeded
-    - Maximum 5 attempts before failure
+    - Includes complete variable declarations and logical assertions
+    - Continuous information preservation monitoring
+    - Intelligent refinement to ensure accuracy
 
     ### Step 3: Formal Verification
-    - Validates logic with formal verification engine
+    - Validates logic with enterprise-grade verification engine
     - Verifies syntax and logical correctness
-    - Captures verification results (satisfiable/unsatisfiable/unknown)
-    - **Quality Gate**: Must execute without errors
-    - Automatic retry with AI-powered error fixing if needed
-    - Maximum 3 attempts before failure
+    - Returns verification results (satisfiable/unsatisfiable/unknown)
+    - Automatic error detection and correction
 
     ## Quality Assurance
 
-    - All outputs meet strict quality thresholds
-    - Semantic similarity verified with embeddings
-    - Information preservation measured at each step
-    - Formal verification confirms syntactic and logical correctness
-    - Manual review flagged for edge cases
+    - Multiple quality gates throughout the pipeline
+    - Semantic preservation verified at each step
+    - Automated accuracy checks and validation
+    - Comprehensive quality metrics in response
 
     ## Performance
 
@@ -135,36 +129,32 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
                 "application/json": {
                     "examples": {
                         "formalization_failure": {
-                            "summary": "Formalization failed to meet similarity threshold",
+                            "summary": "Formalization failed to meet quality threshold",
                             "value": {
-                                "error": "Formalization failed: Could not achieve required similarity threshold after 3 attempts",
+                                "error": "Formalization failed: Could not achieve required semantic similarity threshold",
                                 "details": {
                                     "step": "formalization",
-                                    "attempts": 3,
-                                    "final_similarity": 0.89,
-                                    "threshold": 0.91,
+                                    "message": "Quality threshold not met after multiple attempts",
                                 },
                             },
                         },
                         "extraction_failure": {
-                            "summary": "Extraction exceeded degradation threshold",
+                            "summary": "Symbolic logic generation failed quality check",
                             "value": {
-                                "error": "Extraction failed: Information degradation too high after 5 attempts",
+                                "error": "Symbolic logic generation failed: Information preservation below acceptable threshold",
                                 "details": {
                                     "step": "extraction",
-                                    "attempts": 5,
-                                    "final_degradation": 0.08,
-                                    "threshold": 0.05,
+                                    "message": "Quality threshold not met after refinement attempts",
                                 },
                             },
                         },
                         "validation_failure": {
-                            "summary": "Solver validation failed with syntax error",
+                            "summary": "Formal verification failed",
                             "value": {
-                                "error": "Validation failed: Formal verification error after 3 attempts",
+                                "error": "Formal verification failed: Syntax error detected in generated logic",
                                 "details": {
                                     "step": "validation",
-                                    "solver_output": "Parse error at line 3: unexpected token",
+                                    "message": "Verification engine detected syntax error",
                                 },
                             },
                         },

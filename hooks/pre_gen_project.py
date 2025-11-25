@@ -11,7 +11,8 @@ PROJECT_NAME = "{{ cookiecutter.project_name }}"
 PROJECT_SLUG = "{{ cookiecutter.project_slug }}"
 
 # Validation patterns
-SLUG_REGEX = r'^[a-z][a-z0-9_]+$'
+SLUG_REGEX = r"^[a-z][a-z0-9_]+$"
+
 
 def validate_project_slug():
     """Validate project slug format."""
@@ -23,11 +24,13 @@ def validate_project_slug():
         print(f"  - Match pattern: {SLUG_REGEX}")
         sys.exit(1)
 
+
 def validate_project_name():
     """Validate project name is not empty."""
     if not PROJECT_NAME or PROJECT_NAME.strip() == "":
         print("ERROR: Project name cannot be empty")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     validate_project_name()

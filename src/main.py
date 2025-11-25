@@ -32,65 +32,45 @@ Transform natural language requirements into verified symbolic logic through an 
 
 This service provides a production-grade API for converting informal logical constraints and business rules into formally verified symbolic representations. It ensures semantic preservation through multiple quality gates and automatic error correction.
 
-## Pipeline Architecture
+## How It Works
 
-The service implements a three-step pipeline with quality verification at each stage:
+The service implements an intelligent three-step pipeline with quality verification at each stage:
 
-### 1. Formalization (≥91% Semantic Similarity)
-- Converts informal text to formal representation using Claude AI
-- Verifies semantic preservation with embedding similarity
-- Automatic retry with increasing temperature
-- Maximum 3 attempts
+### 1. Formalization
+- Converts informal text to formal, structured representation
+- AI-powered semantic analysis ensures meaning is preserved
+- Automatic quality verification and retry mechanisms
 
-### 2. Symbolic Logic Generation (≤5% Information Loss)
+### 2. Symbolic Logic Generation
 - Generates verified symbolic representations from formal text
-- Measures information degradation with embedding comparison
-- Automatic retry with increasing detail level
-- Maximum 5 attempts
+- Measures information preservation throughout transformation
+- Intelligent refinement to minimize information loss
 
-### 3. Formal Verification (Error-Free Execution)
-- Validates logic with formal verification engine
+### 3. Formal Verification
+- Validates logic with enterprise-grade verification engine
 - Verifies syntax and logical correctness
-- AI-powered automatic error fixing
-- Maximum 3 attempts
+- Automatic error detection and correction
 
 ## Key Features
 
-- **Semantic Verification**: Embedding-based similarity measurement at each step
-- **Quality Gates**: Strict thresholds ensure output quality
-- **Automatic Retry**: Intelligent retry mechanisms with adaptive parameters
-- **Error Recovery**: AI-powered error fixing for verification failures
-- **Comprehensive Metrics**: Detailed performance and quality metrics
-- **Manual Review Flags**: Identifies outputs requiring human validation
-
-## Quality Guarantees
-
-- **Formalization Similarity**: ≥91% embedding similarity
-- **Information Preservation**: ≤5% degradation allowed
-- **Formal Verification**: Must execute without errors
-- **End-to-End Testing**: All outputs verified with symbolic reasoning engine
-
-## Technology Stack
-
-- **API Framework**: FastAPI (async, high performance)
-- **AI Model**: Claude Sonnet 4.5 (Anthropic)
-- **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)
-- **Verification Engine**: cvc5 (formal methods solver)
-- **Language**: Python 3.12+ with type hints
+- **Semantic Preservation**: Advanced AI ensures meaning is maintained throughout transformation
+- **Quality Assurance**: Multiple quality gates verify output accuracy
+- **Intelligent Automation**: Automatic retry and error correction mechanisms
+- **High Reliability**: Production-tested pipeline with comprehensive validation
+- **Detailed Metrics**: Complete visibility into processing quality and performance
 
 ## Use Cases
 
 - Formal verification of business requirements
 - Automated constraint validation
-- Natural language to formal logic transformation
-- Symbolic reasoning integration
-- Requirements verification tooling
+- Requirements analysis and verification
+- Business rule transformation
+- Compliance and regulatory verification
 
 ## Documentation
 
 - **Swagger UI**: Interactive API documentation and testing
 - **ReDoc**: Alternative documentation view
-- **Examples**: Curated test cases at `/pipeline/examples`
 - **Health Check**: Service status at `/health`
 
 ## Support
@@ -148,8 +128,6 @@ async def root():
     - **status**: Current service health (healthy/degraded/unhealthy)
     - **service**: Service name
     - **version**: Current API version
-    - **model**: AI model being used (Claude version)
-    - **embedding_model**: Embedding model for semantic comparison
 
     Use this endpoint for:
     - Service monitoring and alerting
@@ -163,9 +141,7 @@ async def root():
     {
       "status": "healthy",
       "service": "Formal Symbolic Verification",
-      "version": "0.1.0",
-      "model": "claude-sonnet-4-5-20250929",
-      "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+      "version": "0.1.0"
     }
     ```
     """,
@@ -178,8 +154,6 @@ async def root():
                         "status": "healthy",
                         "service": "Formal Symbolic Verification",
                         "version": "0.1.0",
-                        "model": "claude-sonnet-4-5-20250929",
-                        "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
                     }
                 }
             },

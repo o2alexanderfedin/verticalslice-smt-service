@@ -9,21 +9,21 @@ SAMPLE_TEXTS = [
         "description": "Simple numeric constraint",
         "informal_text": "x must be greater than 5",
         "expected_result": "sat",
-        "complexity": "simple"
+        "complexity": "simple",
     },
     {
         "id": "two_variables",
         "description": "Two variables with constraints",
         "informal_text": "x must be greater than 5 and y must be less than 10, and x plus y equals 12",
         "expected_result": "sat",
-        "complexity": "medium"
+        "complexity": "medium",
     },
     {
         "id": "unsatisfiable",
         "description": "Unsatisfiable constraints",
         "informal_text": "x is greater than 10 and x is less than 5",
         "expected_result": "unsat",
-        "complexity": "simple"
+        "complexity": "simple",
     },
     {
         "id": "complex_conditions",
@@ -34,7 +34,7 @@ SAMPLE_TEXTS = [
             "Also, x plus y plus z must equal 50."
         ),
         "expected_result": "sat",
-        "complexity": "complex"
+        "complexity": "complex",
     },
     {
         "id": "arithmetic_relations",
@@ -46,7 +46,7 @@ SAMPLE_TEXTS = [
             "c is greater than a."
         ),
         "expected_result": "sat",
-        "complexity": "medium"
+        "complexity": "medium",
     },
     {
         "id": "boolean_logic",
@@ -58,8 +58,8 @@ SAMPLE_TEXTS = [
             "If q is true, then variable x must be negative."
         ),
         "expected_result": "sat",
-        "complexity": "complex"
-    }
+        "complexity": "complex",
+    },
 ]
 
 
@@ -90,7 +90,4 @@ def get_samples_by_complexity(complexity: str) -> list[dict]:
     Returns:
         List of matching samples
     """
-    return [
-        sample for sample in SAMPLE_TEXTS
-        if sample["complexity"] == complexity
-    ]
+    return [sample for sample in SAMPLE_TEXTS if sample["complexity"] == complexity]

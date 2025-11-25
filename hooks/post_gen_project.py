@@ -4,7 +4,6 @@ Post-generation hook for AI SWE Template cookiecutter.
 Performs cleanup and customization after project generation.
 """
 
-import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -100,9 +99,7 @@ def init_git():
 
     try:
         subprocess.run(["git", "init", "-q"], check=True, cwd=PROJECT_DIR)
-        subprocess.run(
-            ["git", "checkout", "-b", "main", "-q"], check=True, cwd=PROJECT_DIR
-        )
+        subprocess.run(["git", "checkout", "-b", "main", "-q"], check=True, cwd=PROJECT_DIR)
         print("  ✓ Git initialized")
 
         # Initialize git-flow if requested
@@ -151,7 +148,7 @@ def print_next_steps():
     print("\n" + "=" * 60)
     print("✨ Project generated successfully! ✨")
     print("=" * 60)
-    print(f"\nProject: {{ cookiecutter.project_name }}")
+    print("\nProject: { cookiecutter.project_name }")
     print(f"Location: {PROJECT_DIR}")
     print(f"Language: {LANGUAGE}")
     print("\n📋 Next steps:")

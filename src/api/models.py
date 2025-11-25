@@ -12,12 +12,11 @@ class ProcessRequest(BaseModel):
     """Request model for processing informal text through the formal verification pipeline.
 
     The informal text will be transformed through three rigorous steps:
-    1. **Formalization**: Converts informal text to formal representation (≥91% semantic similarity required)
-    2. **Symbolic Logic Generation**: Generates verified symbolic representations (≤5% information loss allowed)
-    3. **Formal Verification**: Validates logic with verification engine (must produce valid output)
+    1. **Formalization**: Converts informal text to formal representation with semantic preservation
+    2. **Symbolic Logic Generation**: Generates verified symbolic representations with accuracy validation
+    3. **Formal Verification**: Validates logic with verification engine to ensure correctness
 
-    Each step includes automatic retry mechanisms with increasing temperature/detail
-    to ensure quality thresholds are met.
+    Each step includes automatic quality verification and intelligent retry mechanisms.
     """
 
     informal_text: str = Field(
@@ -40,7 +39,7 @@ class ProcessRequest(BaseModel):
         default=False,
         description=(
             "Skip formalization step and treat input as already formal. "
-            "Useful for simple expressions like 'x > 5' that don't need LLM processing. "
+            "Useful for simple expressions like 'x > 5' that don't need AI processing. "
             "The service automatically skips formalization for very short inputs, "
             "but this flag allows explicit control."
         ),
@@ -112,10 +111,10 @@ class ProcessResponse(BaseModel):
         ge=0.0,
         le=1.0,
         description=(
-            "Cosine similarity score between informal and formal text embeddings. "
-            "Measures semantic preservation. "
-            "Threshold: ≥0.91 required for acceptance. "
-            "Range: 0.0 (completely different) to 1.0 (semantically identical)."
+            "Semantic similarity score between informal and formal text. "
+            "Measures how well the original meaning was preserved. "
+            "Range: 0.0 (low similarity) to 1.0 (high similarity). "
+            "Higher values indicate better semantic preservation."
         ),
         examples=[0.95],
     )
@@ -135,10 +134,10 @@ class ProcessResponse(BaseModel):
         ge=0.0,
         le=1.0,
         description=(
-            "Information degradation score from formal text to symbolic logic. "
-            "Measures information loss during transformation. "
-            "Threshold: ≤0.05 required for acceptance. "
-            "Range: 0.0 (no information lost) to 1.0 (complete information loss)."
+            "Information preservation score during symbolic logic generation. "
+            "Measures how accurately information was transformed. "
+            "Range: 0.0 (perfect preservation) to 1.0 (significant loss). "
+            "Lower values indicate better information retention."
         ),
         examples=[0.03],
     )
@@ -196,9 +195,8 @@ class ProcessResponse(BaseModel):
     passed_all_checks: bool = Field(
         description=(
             "Whether all quality thresholds were met across all three steps. "
-            "True means: formalization_similarity ≥ 0.91, extraction_degradation ≤ 0.05, "
-            "and solver executed successfully. "
-            "False means at least one threshold was not met (though processing may have continued)."
+            "True means all automated quality checks passed successfully. "
+            "False means at least one quality threshold was not met."
         ),
         examples=[True],
     )
@@ -273,13 +271,12 @@ class ErrorResponse(BaseModel):
     error: str = Field(
         description=(
             "Human-readable error message describing what went wrong. "
-            "Includes the pipeline step that failed (formalization/symbolic logic generation/formal verification) "
-            "and the specific reason for failure."
+            "Includes the pipeline step that failed and the reason for failure."
         ),
         examples=[
-            "Formalization failed: Could not achieve required similarity threshold (0.89 < 0.91)",
-            "Symbolic logic generation failed: Information degradation too high (0.08 > 0.05)",
-            "Formal verification failed: Verification engine execution error - syntax error on line 3",
+            "Formalization failed: Could not achieve required semantic similarity threshold",
+            "Symbolic logic generation failed: Information preservation below acceptable threshold",
+            "Formal verification failed: Syntax error detected in generated logic",
         ],
     )
     details: dict | None = Field(
@@ -307,7 +304,7 @@ class ErrorResponse(BaseModel):
                     },
                 },
                 {
-                    "error": "Validation failed: SMT solver syntax error",
+                    "error": "Formal verification failed: Syntax error detected in logic",
                     "details": {
                         "step": "validation",
                         "solver_output": "Parse error at line 3: unexpected token ','",
