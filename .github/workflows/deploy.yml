@@ -93,7 +93,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio pytest-cov httpx
+          pip install pytest pytest-asyncio pytest-cov pytest-mock httpx
           # Install CPU-only PyTorch first to avoid downloading 3GB+ CUDA libraries
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
