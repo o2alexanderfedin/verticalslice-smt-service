@@ -60,9 +60,13 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
     ## Performance
 
-    - Typical processing time: 3-10 seconds
-    - Depends on text complexity and retry attempts
-    - Detailed metrics returned in response
+    - **Typical processing time**: 20-30 seconds (with quality assurance retries)
+    - **Best case**: 3-10 seconds (when all quality checks pass on first attempt)
+    - Processing time varies based on:
+      - Input text complexity
+      - Number of quality assurance retry attempts needed
+      - Semantic similarity and accuracy thresholds
+    - Detailed timing metrics and attempt counts returned in response
 
     ## Example Request
 
