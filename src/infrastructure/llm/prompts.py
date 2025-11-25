@@ -35,11 +35,27 @@ REQUIRED OUTPUT (in SMT-LIB comments):
 ## Phase 2: Domain Modeling & Ground Truth Separation
 REQUIRED OUTPUT (in SMT-LIB comments):
 ; === PHASE 2: DOMAIN MODELING ===
-; Ground Truth (from problem data):
-; - [list all concrete values, measurements, facts provided]
 ;
-; Derived Logic (to be modeled):
-; - [list all constraints, relationships, rules to encode]
+; CRITICAL: Distinguish FACTS (ground truth) from CLAIMS (constraints to verify)
+;
+; MODAL LANGUAGE DETECTOR:
+; - Modal verbs (must, should, ought to, has to, needs to) signal CLAIMS, not facts
+; - Present indicative (is, equals, has, contains) signals GROUND TRUTH
+; - Imperative (ensure, verify, check) signals CLAIMS
+;
+; Ground Truth (concrete facts given in the problem):
+; - [list all concrete values, measurements, existing state]
+; - Pattern: "X is V" → (assert (= x V))
+; - Pattern: "Y contains V" → (assert (= y V))
+;
+; Claims to Verify (requirements, constraints using modal language):
+; - [list all modal statements, requirements, conditions]
+; - Pattern: "X must be OP V" → (assert (OP x V))
+; - Pattern: "Y should satisfy C" → (assert C)
+;
+; Contradiction Check:
+; - [If ground truth contradicts claims, note: "EXPECT UNSAT - ground truth violates claims"]
+; - When ground truth assigns a value AND claims require a different value → expect unsat
 ;
 ; SPECIAL CASE - YES/NO Verification Queries:
 ; If problem asks "Can X happen?" or "Is Y possible?", use ASSERT-AND-TEST pattern:
@@ -78,12 +94,49 @@ Use linking via uninterpreted function:
   (assert (=> (link x y) (> x 5)))
   (assert (=> (link x y) (< y 10)))
 
+CRITICAL PATTERN: GROUND TRUTH + CLAIMS ENCODING
+
+Generic Pattern:
+  Input: "Variable V is A. V must be OP B."
+  (declare-const V Type)
+  (assert (= V A))                   ; Ground truth: V IS A
+  (assert (OP V B))                  ; Claim: must satisfy (OP V B)
+  ; Result: unsat if A does not satisfy (OP A B), sat otherwise
+
+Example (illustrative only - apply pattern to any domain):
+  Input: "Count is 5. Count must be strictly greater than 5 and less than 10."
+  (declare-const count Int)
+  (assert (= count 5))               ; Ground truth: count IS 5
+  (assert (> count 5))               ; Claim: must be > 5
+  (assert (< count 10))              ; Claim: must be < 10
+  ; Result: unsat (contradiction - 5 is not > 5)
+
+INCORRECT encoding (DO NOT DO THIS):
+  (declare-const count Int)
+  (declare-const target Int)         ; WRONG: creates separate variable
+  (assert (= count 5))
+  (assert (> target 5))
+  ; Result: sat (vacuous - no connection between count and target)
+
+This pattern applies to ANY SMT-LIB theory supported by cvc5:
+- Arithmetic: QF_LIA, QF_LRA, QF_NIA, QF_NRA
+- Bitvectors: QF_BV, QF_ABV
+- Arrays: QF_AX, QF_AUFLIA
+- Strings: QF_S, QF_SLIA
+- Datatypes: user-defined types
+- Sets, Bags, Sequences
+- Uninterpreted functions: QF_UF, QF_UFLIA
+- Combinations: QF_AUFBV, QF_UFBV, etc.
+
 ## Phase 5: Self-Verification Checklist
 REQUIRED OUTPUT (in SMT-LIB comments at end):
 ; === PHASE 5: SELF-VERIFICATION ===
 ; [ ] All variables declared?
 ; [ ] Constraints match problem description?
 ; [ ] Logic theory appropriate?
+; [ ] Ground truth facts separated from claims to verify?
+; [ ] Modal language ("must", "should") encoded as constraints, not facts?
+; [ ] If ground truth contradicts claims, expecting unsat?
 ; [ ] Uninterpreted functions link related constraints?
 ; [ ] (check-sat) included as LAST command before get-model?
 ; [ ] For YES/NO: using assert-and-test (not get-value on boolean)?
