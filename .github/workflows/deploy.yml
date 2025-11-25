@@ -4,6 +4,12 @@ on:
   release:
     types: [published]
   workflow_dispatch:  # Allow manual triggering for testing
+    inputs:
+      run_integration_tests:
+        description: 'Run integration tests (expensive, uses AI tokens)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -98,8 +104,13 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_MODEL: haiku
         run: |
-          echo "Running tests with coverage (skipping integration tests to reduce API costs)..."
-          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 --ignore=tests/integration/ || [ $? -eq 5 ]  # Exit code 5 = no tests collected (OK for now)
+          if [ "${{ inputs.run_integration_tests }}" = "true" ]; then
+            echo "Running ALL tests including integration tests (expensive!)..."
+            pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 || [ $? -eq 5 ]
+          else
+            echo "Running unit tests only (skipping integration tests to reduce costs)..."
+            pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 --ignore=tests/integration/ || [ $? -eq 5 ]
+          fi
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
