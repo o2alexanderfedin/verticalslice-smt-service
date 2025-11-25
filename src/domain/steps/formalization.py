@@ -27,7 +27,7 @@ class FormalizationStep:
         verifier: "SemanticVerifier",
         threshold: float = 0.91,
         max_retries: int = 3,
-        skip_threshold: int = 20,
+        skip_threshold: int = 200,
     ):
         """Initialize formalization step.
 
@@ -37,7 +37,7 @@ class FormalizationStep:
             verifier: Semantic similarity verifier
             threshold: Minimum similarity threshold (default 0.91)
             max_retries: Maximum retry attempts (default 3)
-            skip_threshold: Skip formalization for inputs shorter than this (default 20)
+            skip_threshold: Skip formalization for inputs shorter than this (default 200)
         """
         self.llm_provider = llm_provider
         self.embedding_provider = embedding_provider

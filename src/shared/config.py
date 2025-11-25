@@ -34,9 +34,9 @@ class Settings(BaseSettings):
         default=0.90, ge=0.0, le=1.0, description="Minimum cosine similarity for formalization step"
     )
     formalization_skip_threshold: int = Field(
-        default=20,
+        default=200,
         ge=0,
-        le=100,
+        le=1000,
         description="Skip formalization for inputs shorter than this (in characters, 0=never skip)",
     )
     extraction_max_degradation: float = Field(
