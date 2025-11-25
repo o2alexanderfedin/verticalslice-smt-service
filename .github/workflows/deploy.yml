@@ -98,8 +98,8 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_MODEL: haiku
         run: |
-          echo "Running tests with coverage..."
-          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 || [ $? -eq 5 ]  # Exit code 5 = no tests collected (OK for now)
+          echo "Running tests with coverage (skipping integration tests to reduce API costs)..."
+          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=0 --ignore=tests/integration/ || [ $? -eq 5 ]  # Exit code 5 = no tests collected (OK for now)
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
