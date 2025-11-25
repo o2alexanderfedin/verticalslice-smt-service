@@ -9,12 +9,12 @@ from src.domain.models import PipelineMetrics, VerifiedOutput
 
 
 class ProcessRequest(BaseModel):
-    """Request model for processing informal text through the semantic-preserving pipeline.
+    """Request model for processing informal text through the formal verification pipeline.
 
     The informal text will be transformed through three rigorous steps:
     1. **Formalization**: Converts informal text to formal representation (≥91% semantic similarity required)
-    2. **SMT-LIB Extraction**: Generates annotated SMT-LIB code (≤5% information loss allowed)
-    3. **Solver Validation**: Executes with Z3 solver to verify correctness (must produce valid output)
+    2. **Symbolic Logic Generation**: Generates verified symbolic representations (≤5% information loss allowed)
+    3. **Formal Verification**: Validates logic with verification engine (must produce valid output)
 
     Each step includes automatic retry mechanisms with increasing temperature/detail
     to ensure quality thresholds are met.
@@ -69,7 +69,7 @@ class ProcessRequest(BaseModel):
 
 
 class ProcessResponse(BaseModel):
-    """Response model containing complete verified output from the semantic-preserving pipeline.
+    """Response model containing complete verified output from the formal verification pipeline.
 
     This response includes outputs from all three pipeline steps, performance metrics,
     and quality indicators. All outputs have been verified to meet semantic similarity
@@ -120,11 +120,11 @@ class ProcessResponse(BaseModel):
         examples=[0.95],
     )
 
-    # Step 2 output: SMT-LIB Extraction
+    # Step 2 output: Symbolic Logic Generation
     smt_lib_code: str = Field(
         description=(
-            "Complete annotated SMT-LIB code that can be executed by Z3 solver. "
-            "Includes variable declarations, assertions, and solver commands. "
+            "Complete symbolic logic representation that can be verified by formal verification engine. "
+            "Includes variable declarations, assertions, and verification commands. "
             "Contains inline comments explaining the formalization."
         ),
         examples=[
@@ -135,22 +135,22 @@ class ProcessResponse(BaseModel):
         ge=0.0,
         le=1.0,
         description=(
-            "Information degradation score from formal text to SMT-LIB code. "
-            "Measures information loss during extraction. "
+            "Information degradation score from formal text to symbolic logic. "
+            "Measures information loss during transformation. "
             "Threshold: ≤0.05 required for acceptance. "
             "Range: 0.0 (no information lost) to 1.0 (complete information loss)."
         ),
         examples=[0.03],
     )
 
-    # Step 3 output: Solver Validation
+    # Step 3 output: Formal Verification
     check_sat_result: str = Field(
         description=(
-            "Result from SMT solver's (check-sat) command. "
+            "Result from formal verification engine. "
             "Possible values: 'sat' (satisfiable - solution exists), "
             "'unsat' (unsatisfiable - no solution possible), "
-            "'unknown' (solver could not determine), "
-            "or an error message if execution failed."
+            "'unknown' (engine could not determine), "
+            "or an error message if verification failed."
         ),
         examples=["sat"],
     )
@@ -176,8 +176,8 @@ class ProcessResponse(BaseModel):
     )
     solver_success: bool = Field(
         description=(
-            "Whether the SMT solver executed successfully without errors. "
-            "True means the solver ran and produced a valid result (sat/unsat/unknown). "
+            "Whether the formal verification engine executed successfully without errors. "
+            "True means verification ran and produced a valid result (sat/unsat/unknown). "
             "False means there were execution errors (syntax errors, timeouts, etc.)."
         ),
         examples=[True],
@@ -273,13 +273,13 @@ class ErrorResponse(BaseModel):
     error: str = Field(
         description=(
             "Human-readable error message describing what went wrong. "
-            "Includes the pipeline step that failed (formalization/extraction/validation) "
+            "Includes the pipeline step that failed (formalization/symbolic logic generation/formal verification) "
             "and the specific reason for failure."
         ),
         examples=[
             "Formalization failed: Could not achieve required similarity threshold (0.89 < 0.91)",
-            "Extraction failed: Information degradation too high (0.08 > 0.05)",
-            "Validation failed: SMT solver execution error - syntax error on line 3",
+            "Symbolic logic generation failed: Information degradation too high (0.08 > 0.05)",
+            "Formal verification failed: Verification engine execution error - syntax error on line 3",
         ],
     )
     details: dict | None = Field(

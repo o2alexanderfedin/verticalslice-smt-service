@@ -1,6 +1,6 @@
 """Pipeline API routes.
 
-Endpoints for processing informal text through the SMT-LIB pipeline.
+Endpoints for processing informal text through formal symbolic verification.
 """
 
 import logging
@@ -21,9 +21,9 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
     "/process",
     response_model=ProcessResponse,
     status_code=200,
-    summary="Process informal text to verified SMT-LIB output",
+    summary="Process informal text to verified symbolic logic",
     description="""
-    Transform informal natural language into verified, executable SMT-LIB code through a semantic-preserving pipeline.
+    Transform informal natural language into verified symbolic logic through an AI-powered semantic-preserving pipeline.
 
     ## Pipeline Overview
 
@@ -36,19 +36,19 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
     - Automatic retry with increasing temperature if threshold not met
     - Maximum 3 attempts before failure
 
-    ### Step 2: SMT-LIB Extraction
-    - Generates annotated SMT-LIB code from formal text
-    - Includes variable declarations, assertions, and solver commands
+    ### Step 2: Symbolic Logic Generation
+    - Generates verified symbolic representations from formal text
+    - Includes variable declarations, assertions, and verification commands
     - **Quality Gate**: ≤5% information degradation allowed
     - Automatic retry with increasing detail level if threshold exceeded
     - Maximum 5 attempts before failure
 
-    ### Step 3: Solver Validation
-    - Executes generated code with Z3 SMT solver
-    - Validates syntax and logical correctness
-    - Captures solver results (sat/unsat/unknown)
+    ### Step 3: Formal Verification
+    - Validates logic with formal verification engine
+    - Verifies syntax and logical correctness
+    - Captures verification results (satisfiable/unsatisfiable/unknown)
     - **Quality Gate**: Must execute without errors
-    - Automatic retry with Claude-powered error fixing if needed
+    - Automatic retry with AI-powered error fixing if needed
     - Maximum 3 attempts before failure
 
     ## Quality Assurance
@@ -56,7 +56,7 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
     - All outputs meet strict quality thresholds
     - Semantic similarity verified with embeddings
     - Information preservation measured at each step
-    - Solver execution confirms syntactic and logical correctness
+    - Formal verification confirms syntactic and logical correctness
     - Manual review flagged for edge cases
 
     ## Performance
@@ -161,7 +161,7 @@ router = APIRouter(prefix="/pipeline", tags=["pipeline"])
                         "validation_failure": {
                             "summary": "Solver validation failed with syntax error",
                             "value": {
-                                "error": "Validation failed: SMT solver execution error after 3 attempts",
+                                "error": "Validation failed: Formal verification error after 3 attempts",
                                 "details": {
                                     "step": "validation",
                                     "solver_output": "Parse error at line 3: unexpected token",
@@ -192,16 +192,16 @@ async def process_informal_text(
 ) -> ProcessResponse:
     """Process informal text through the complete semantic-preserving pipeline.
 
-    Executes all three steps (formalization, extraction, validation) with quality
-    verification at each stage. Returns verified SMT-LIB code that has been
-    validated by the Z3 solver.
+    Executes all three steps (formalization, symbolic logic generation, formal verification)
+    with quality verification at each stage. Returns verified symbolic logic that has been
+    validated by the formal verification engine.
 
     Args:
         request: ProcessRequest containing informal natural language text
         pipeline_service: Injected PipelineService instance for processing
 
     Returns:
-        ProcessResponse with verified SMT-LIB output, quality metrics, and solver results
+        ProcessResponse with verified symbolic logic, quality metrics, and verification results
 
     Raises:
         HTTPException: 422 if pipeline processing fails at any step

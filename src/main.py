@@ -24,13 +24,13 @@ app = FastAPI(
     title=settings.api_title,
     version=settings.api_version,
     description="""
-# Semantic-Preserving SMT-LIB Pipeline Service
+# Formal Symbolic Verification Service
 
-Transform informal natural language into verified, executable SMT-LIB code through a rigorous semantic-preserving pipeline.
+Transform natural language requirements into verified symbolic logic through an AI-powered semantic-preserving pipeline.
 
 ## Overview
 
-This service provides a production-grade API for converting informal logical constraints into formal SMT-LIB code that can be executed by SMT solvers. It ensures semantic preservation through multiple quality gates and automatic error correction.
+This service provides a production-grade API for converting informal logical constraints and business rules into formally verified symbolic representations. It ensures semantic preservation through multiple quality gates and automatic error correction.
 
 ## Pipeline Architecture
 
@@ -42,16 +42,16 @@ The service implements a three-step pipeline with quality verification at each s
 - Automatic retry with increasing temperature
 - Maximum 3 attempts
 
-### 2. SMT-LIB Extraction (≤5% Information Loss)
-- Generates annotated SMT-LIB code from formal text
+### 2. Symbolic Logic Generation (≤5% Information Loss)
+- Generates verified symbolic representations from formal text
 - Measures information degradation with embedding comparison
 - Automatic retry with increasing detail level
 - Maximum 5 attempts
 
-### 3. Solver Validation (Error-Free Execution)
-- Executes code with Z3 SMT solver
-- Validates syntax and logical correctness
-- Claude-powered automatic error fixing
+### 3. Formal Verification (Error-Free Execution)
+- Validates logic with formal verification engine
+- Verifies syntax and logical correctness
+- AI-powered automatic error fixing
 - Maximum 3 attempts
 
 ## Key Features
@@ -59,7 +59,7 @@ The service implements a three-step pipeline with quality verification at each s
 - **Semantic Verification**: Embedding-based similarity measurement at each step
 - **Quality Gates**: Strict thresholds ensure output quality
 - **Automatic Retry**: Intelligent retry mechanisms with adaptive parameters
-- **Error Recovery**: AI-powered error fixing for solver failures
+- **Error Recovery**: AI-powered error fixing for verification failures
 - **Comprehensive Metrics**: Detailed performance and quality metrics
 - **Manual Review Flags**: Identifies outputs requiring human validation
 
@@ -67,24 +67,24 @@ The service implements a three-step pipeline with quality verification at each s
 
 - **Formalization Similarity**: ≥91% embedding similarity
 - **Information Preservation**: ≤5% degradation allowed
-- **Solver Validation**: Must execute without errors
-- **End-to-End Testing**: All outputs verified with Z3 solver
+- **Formal Verification**: Must execute without errors
+- **End-to-End Testing**: All outputs verified with symbolic reasoning engine
 
 ## Technology Stack
 
 - **API Framework**: FastAPI (async, high performance)
 - **AI Model**: Claude Sonnet 4.5 (Anthropic)
 - **Embeddings**: Sentence Transformers (all-MiniLM-L6-v2)
-- **SMT Solver**: Z3 (Microsoft Research)
+- **Verification Engine**: cvc5 (formal methods solver)
 - **Language**: Python 3.12+ with type hints
 
 ## Use Cases
 
-- Formal verification of requirements
-- Automated constraint generation
-- Natural language to logic transformation
-- SMT solver integration
-- Formal methods tooling
+- Formal verification of business requirements
+- Automated constraint validation
+- Natural language to formal logic transformation
+- Symbolic reasoning integration
+- Requirements verification tooling
 
 ## Documentation
 
@@ -100,7 +100,7 @@ For issues, questions, or feature requests, please refer to the project reposito
     docs_url="/docs",
     redoc_url="/redoc",
     contact={
-        "name": "SMT Pipeline Team",
+        "name": "Formal Verification Team",
         "email": "support@example.com",
     },
     license_info={
@@ -110,7 +110,7 @@ For issues, questions, or feature requests, please refer to the project reposito
     openapi_tags=[
         {
             "name": "Pipeline Processing",
-            "description": "Core pipeline endpoints for processing informal text to SMT-LIB code",
+            "description": "Core pipeline endpoints for processing informal text to verified symbolic logic",
         },
         {"name": "Health & Status", "description": "Service health check and status endpoints"},
     ],
@@ -142,7 +142,7 @@ async def root():
     status_code=200,
     summary="Service health check",
     description="""
-    Check the health and status of the SMT Pipeline service.
+    Check the health and status of the Formal Verification service.
 
     Returns basic service information including:
     - **status**: Current service health (healthy/degraded/unhealthy)
@@ -162,7 +162,7 @@ async def root():
     ```json
     {
       "status": "healthy",
-      "service": "Semantic-Preserving SMT-LIB Pipeline",
+      "service": "Formal Symbolic Verification",
       "version": "0.1.0",
       "model": "claude-sonnet-4-5-20250929",
       "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
@@ -176,7 +176,7 @@ async def root():
                 "application/json": {
                     "example": {
                         "status": "healthy",
-                        "service": "Semantic-Preserving SMT-LIB Pipeline",
+                        "service": "Formal Symbolic Verification",
                         "version": "0.1.0",
                         "model": "claude-sonnet-4-5-20250929",
                         "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
