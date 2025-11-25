@@ -50,17 +50,20 @@ class Cvc5Executor:
 
         try:
             # Run in thread pool
+            # Note: We can't interrupt threads, so cvc5's tlimit option is the real timeout.
+            # asyncio.wait_for is a safety net with extra buffer for thread overhead.
             loop = asyncio.get_event_loop()
+            async_timeout = max(timeout * 2, timeout + 2.0)  # Give cvc5 time to timeout internally
             result = await asyncio.wait_for(
                 loop.run_in_executor(None, self._execute_sync, smt_code, timeout),
-                timeout=timeout + 1.0,  # Add 1s buffer for thread pool overhead
+                timeout=async_timeout,
             )
 
             logger.debug(f"Execution completed: {result['check_sat_result']}")
             return result
 
         except TimeoutError:
-            logger.error(f"SMT execution timeout ({timeout}s)")
+            logger.error(f"SMT execution timeout ({timeout}s) - asyncio wait_for expired")
             return {
                 "success": False,
                 "check_sat_result": "timeout",
@@ -157,9 +160,15 @@ class Cvc5Executor:
             # If no check-sat was found in commands, execute it explicitly
             if check_sat_result is None:
                 logger.debug("No check-sat found in SMT code, executing explicitly")
-                result = solver.checkSat()
-                check_sat_result = self._parse_result(result)
-                output_lines.append(check_sat_result)
+                try:
+                    result = solver.checkSat()
+                    check_sat_result = self._parse_result(result)
+                    output_lines.append(check_sat_result)
+                except Exception as e:
+                    # cvc5 may throw if timeout exceeded
+                    logger.warning(f"checkSat raised exception (likely timeout): {e}")
+                    check_sat_result = "timeout"
+                    output_lines.append(f"timeout (exception: {e})")
 
             # If model wasn't extracted but result is sat, try to get it programmatically
             if check_sat_result == "sat" and model is None:
@@ -174,6 +183,7 @@ class Cvc5Executor:
 
                     # Re-execute with model extraction
                     solver2 = cvc5.Solver()
+                    solver2.setOption("tlimit", str(int(timeout * 1000)))  # Apply same timeout
                     solver2.setOption("produce-models", "true")
                     parser2 = cvc5.InputParser(solver2)
                     sm2 = parser2.getSymbolManager()
