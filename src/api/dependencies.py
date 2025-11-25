@@ -8,7 +8,7 @@ from functools import lru_cache
 from src.application.pipeline_service import PipelineService
 from src.infrastructure.embeddings.sentence_transformer import SentenceTransformerProvider
 from src.infrastructure.llm.client import AnthropicClient
-from src.infrastructure.smt.pysmt_executor import PysmtExecutor
+from src.infrastructure.smt.cvc5_executor import Cvc5Executor
 from src.shared.config import Settings
 
 
@@ -51,15 +51,15 @@ def get_llm_provider() -> AnthropicClient:
 
 
 @lru_cache
-def get_smt_solver() -> PysmtExecutor:
+def get_smt_solver() -> Cvc5Executor:
     """Get SMT solver (singleton).
 
     Cached because the executor is stateless and can be reused.
 
     Returns:
-        pySMT executor
+        cvc5 executor
     """
-    return PysmtExecutor(solver_name="z3")
+    return Cvc5Executor()
 
 
 def get_pipeline_service() -> PipelineService:

@@ -1,11 +1,15 @@
 """pySMT-based SMT solver executor.
 
 Uses pySMT library for solver-agnostic SMT-LIB execution.
+
+DEPRECATED: This executor is deprecated in favor of Cvc5Executor which uses
+cvc5's native Python API and built-in parser. Please migrate to Cvc5Executor.
 """
 
 import asyncio
 import io
 import logging
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +23,12 @@ class PysmtExecutor:
         Args:
             solver_name: Solver backend to use (z3, cvc5, msat, etc.)
         """
+        warnings.warn(
+            "PysmtExecutor is deprecated. Use Cvc5Executor instead for better "
+            "performance and native parser support.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.solver_name = solver_name
         logger.info(f"Initialized pySMT executor with solver: {solver_name}")
 

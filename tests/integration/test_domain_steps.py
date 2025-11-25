@@ -15,7 +15,7 @@ from src.domain.steps.validation import ValidationStep
 from src.domain.verification.embedding_verifier import EmbeddingDistanceVerifier
 from src.infrastructure.embeddings.sentence_transformer import SentenceTransformerProvider
 from src.infrastructure.llm.client import AnthropicClient
-from src.infrastructure.smt.z3_executor import Z3Executor
+from src.infrastructure.smt.cvc5_executor import Cvc5Executor
 
 
 @pytest.fixture
@@ -37,9 +37,9 @@ def verifier() -> EmbeddingDistanceVerifier:
 
 
 @pytest.fixture
-def smt_solver() -> Z3Executor:
+def smt_solver() -> Cvc5Executor:
     """Create SMT solver."""
-    return Z3Executor()
+    return Cvc5Executor()
 
 
 @pytest.mark.skipif(
@@ -168,7 +168,7 @@ class TestValidationStepIntegration:
     async def test_validate_correct_smt_code(
         self,
         llm_provider: AnthropicClient,
-        smt_solver: Z3Executor,
+        smt_solver: Cvc5Executor,
     ) -> None:
         """Test validation of correct SMT-LIB code."""
         step = ValidationStep(
@@ -197,7 +197,7 @@ class TestValidationStepIntegration:
     async def test_validate_unsat_code(
         self,
         llm_provider: AnthropicClient,
-        smt_solver: Z3Executor,
+        smt_solver: Cvc5Executor,
     ) -> None:
         """Test validation of unsatisfiable SMT-LIB code."""
         step = ValidationStep(
@@ -224,7 +224,7 @@ class TestValidationStepIntegration:
     async def test_validate_strips_markdown_fences(
         self,
         llm_provider: AnthropicClient,
-        smt_solver: Z3Executor,
+        smt_solver: Cvc5Executor,
     ) -> None:
         """Test validation strips markdown code fences."""
         step = ValidationStep(
@@ -249,7 +249,7 @@ class TestValidationStepIntegration:
     async def test_validate_fixes_syntax_error(
         self,
         llm_provider: AnthropicClient,
-        smt_solver: Z3Executor,
+        smt_solver: Cvc5Executor,
     ) -> None:
         """Test validation uses LLM to fix syntax errors."""
         step = ValidationStep(
@@ -290,7 +290,7 @@ class TestEndToEndIntegration:
         llm_provider: AnthropicClient,
         embedding_provider: SentenceTransformerProvider,
         verifier: EmbeddingDistanceVerifier,
-        smt_solver: Z3Executor,
+        smt_solver: Cvc5Executor,
     ) -> None:
         """Test full pipeline from informal text to SMT validation."""
         # Step 1: Formalization

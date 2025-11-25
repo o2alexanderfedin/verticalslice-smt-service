@@ -7,10 +7,14 @@ using Z3 solver via async subprocess execution.
 Z3 is executed as an external process in interactive mode, with SMT-LIB code
 passed via stdin. This approach allows for proper timeout handling and
 async execution without blocking the event loop.
+
+DEPRECATED: This executor is deprecated in favor of Cvc5Executor which uses
+cvc5's native Python API and built-in parser. Please migrate to Cvc5Executor.
 """
 
 import asyncio
 import logging
+import warnings
 
 from src.domain.models import SolverResult
 
@@ -42,6 +46,12 @@ class Z3Executor:
         Args:
             z3_path: Path to Z3 executable (default: "z3" from PATH)
         """
+        warnings.warn(
+            "Z3Executor is deprecated. Use Cvc5Executor instead for better "
+            "performance and native parser support.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self._z3_path = z3_path
         logger.info(f"Initialized Z3Executor with path: {z3_path}")
 

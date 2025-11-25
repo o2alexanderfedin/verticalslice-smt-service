@@ -27,10 +27,8 @@ numpy>=1.24.0,<2.0.0
 # ===========================
 # SMT Solver Integration
 # ===========================
-# pySMT framework for SMT solver abstraction
-pysmt>=0.9.5,<1.0.0
-# Z3 solver backend for pySMT (required)
-z3-solver==4.13.0.0
+# cvc5 solver with native Python API and SMT-LIB parser
+cvc5>=1.1.2,<2.0.0
 
 # ===========================
 # Utilities
