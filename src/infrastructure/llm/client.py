@@ -37,12 +37,16 @@ class AnthropicClient:
 
     Attributes:
         _client: Anthropic async client instance
-        _model: Claude model identifier (e.g., haiku)
+        _model: Claude model identifier for main pipeline (formalization, extraction, validation)
+        _enrichment_model: Claude model identifier for enrichment (web search)
     """
 
     def __init__(self):
         """
-        Initialize Anthropic client.
+        Initialize Anthropic client with dual model support.
+
+        Uses ANTHROPIC_MODEL for main pipeline operations and
+        ANTHROPIC_ENRICHMENT_MODEL for web search enrichment.
         """
         api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
         if not api_key:
@@ -50,9 +54,18 @@ class AnthropicClient:
                 "ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN environment variable is required"
             )
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
-        self._model = "claude-3-haiku-20240307"
 
-        logger.info(f"Initialized AnthropicClient with model: {self._model}")
+        # Main model for formalization, extraction, validation
+        self._model = os.environ.get("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
+
+        # Enrichment model for web search (must support web_search tool)
+        self._enrichment_model = os.environ.get(
+            "ANTHROPIC_ENRICHMENT_MODEL", "claude-sonnet-4-5-20250929"
+        )
+
+        logger.info(
+            f"Initialized AnthropicClient - Main: {self._model}, Enrichment: {self._enrichment_model}"
+        )
 
     @retry_with_backoff(
         max_retries=3,
@@ -370,10 +383,11 @@ Return the enriched text only, no explanations."""
 Search for definitions and background information as needed, then provide the enriched text."""
 
         try:
-            # Call API with web_search tool
+            # Call API with web_search tool using enrichment model
             # Note: max_tokens is REQUIRED when using tools
+            # Note: Using self._enrichment_model which supports web_search tool
             message = await self._client.messages.create(
-                model=self._model,
+                model=self._enrichment_model,  # Use enrichment model (Sonnet) for web search
                 max_tokens=4096,  # Required parameter for tool use
                 temperature=0,
                 system=system_prompt,

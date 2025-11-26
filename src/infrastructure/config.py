@@ -66,13 +66,15 @@ class Settings(BaseSettings):
 
     Environment Variables:
         ANTHROPIC_API_KEY: API key for Anthropic Claude (required)
-        ANTHROPIC_MODEL: Model name for Claude (default: claude-sonnet-4-5-20250929)
+        ANTHROPIC_MODEL: Model name for Claude (default: claude-3-haiku-20240307)
+        ANTHROPIC_ENRICHMENT_MODEL: Model for web search enrichment (default: claude-3-5-sonnet-20241022)
         EMBEDDING_MODEL: Model name for embeddings (default: sentence-transformers/all-MiniLM-L6-v2)
         PIPELINE_*: Pipeline configuration (see PipelineConfig for details)
 
     Attributes:
         anthropic_api_key: Anthropic API key for LLM calls
-        anthropic_model: Claude model identifier
+        anthropic_model: Claude model identifier for main pipeline
+        anthropic_enrichment_model: Claude model identifier for enrichment (web search)
         embedding_model: Sentence-transformers model identifier
         pipeline: Nested pipeline configuration
     """
@@ -80,8 +82,12 @@ class Settings(BaseSettings):
     # Anthropic LLM configuration
     anthropic_api_key: str = Field(description="Anthropic API key for Claude LLM calls")
     anthropic_model: str = Field(
+        default="claude-3-haiku-20240307",
+        description="Claude model identifier for main pipeline (formalization, extraction, validation)",
+    )
+    anthropic_enrichment_model: str = Field(
         default="claude-sonnet-4-5-20250929",
-        description="Claude model identifier",
+        description="Claude model identifier for enrichment (web search) - must support web_search tool",
     )
 
     # Embedding model configuration
@@ -135,7 +141,7 @@ def get_settings() -> Settings:
     Example:
         >>> settings = get_settings()
         >>> print(settings.anthropic_model)
-        claude-sonnet-4-5-20250929
+        claude-3-haiku-20240307
     """
     global _settings
     if _settings is None:
