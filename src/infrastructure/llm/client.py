@@ -317,15 +317,23 @@ whatever is needed to reduce information loss and correctly represent the formal
         """
         Enrich text with domain knowledge using web search.
 
-        Uses Anthropic's web_search tool to gather relevant context,
-        definitions, and background information for domain-specific terminology.
+        Uses Anthropic's web_search_20250305 tool via the standard Messages API
+        to gather relevant context, definitions, and background information for
+        domain-specific terminology. Claude autonomously decides when to search
+        based on the prompt, and the API executes searches server-side.
+
+        The response includes citations that link enriched text back to sources,
+        ensuring traceability of web-sourced information.
 
         Args:
             text: Input text to enrich
-            max_searches: Maximum number of web searches to perform
+            max_searches: Maximum number of web searches to perform (default: 5)
 
         Returns:
-            Tuple of (enriched_text, search_count, sources_used)
+            Tuple of (enriched_text, search_count, sources_used) where:
+            - enriched_text: Text with added context and definitions
+            - search_count: Number of web searches performed
+            - sources_used: List of source URLs cited
 
         Raises:
             anthropic.APIError: If API call fails after retries
@@ -363,8 +371,10 @@ Search for definitions and background information as needed, then provide the en
 
         try:
             # Call API with web_search tool
+            # Note: max_tokens is REQUIRED when using tools
             message = await self._client.messages.create(
                 model=self._model,
+                max_tokens=4096,  # Required parameter for tool use
                 temperature=0,
                 system=system_prompt,
                 tools=[
@@ -383,19 +393,32 @@ Search for definitions and background information as needed, then provide the en
             search_count = 0
 
             for block in message.content:
-                if block.type == "text":
-                    enriched_text = block.text
-                elif block.type == "tool_use" and block.name == "web_search":
+                if block.type == "text" and hasattr(block, "text"):
+                    enriched_text = block.text  # type: ignore[attr-defined]
+                    # Extract citations from text blocks if available
+                    if hasattr(block, "citations") and block.citations:
+                        for citation in block.citations:  # type: ignore[attr-defined]
+                            if (
+                                hasattr(citation, "url")
+                                and citation.url
+                                and citation.url not in sources_used
+                            ):
+                                sources_used.append(citation.url)
+                elif block.type == "server_tool_use" and hasattr(block, "name") and block.name == "web_search":  # type: ignore[attr-defined]
+                    # Count server-side tool uses (web searches)
                     search_count += 1
-                elif (
-                    block.type == "web_search_tool_result"
-                    and hasattr(block, "content")
-                    and block.content
-                ):
+                elif block.type == "web_search_tool_result":
                     # Extract URLs from search results
-                    for result in block.content:
-                        if hasattr(result, "url") and result.url and result.url not in sources_used:
-                            sources_used.append(result.url)
+                    if hasattr(block, "content") and block.content:
+                        for result in block.content:  # type: ignore[attr-defined]
+                            if (
+                                hasattr(result, "type")
+                                and result.type == "web_search_result"  # type: ignore[union-attr]
+                                and hasattr(result, "url")
+                                and result.url  # type: ignore[union-attr]
+                                and result.url not in sources_used  # type: ignore[union-attr]
+                            ):
+                                sources_used.append(result.url)  # type: ignore[union-attr]
 
             # If no text block found, use original text
             if not enriched_text:

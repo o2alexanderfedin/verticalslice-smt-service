@@ -268,20 +268,24 @@ class TestAnthropicClient:
 
         mock_message = Mock()
 
-        # Text content block
+        # Text content block with citations
         mock_text_block = Mock()
         mock_text_block.type = "text"
         mock_text_block.text = "Enriched text with context"
+        mock_citation = Mock()
+        mock_citation.url = "https://example.com/citation"
+        mock_text_block.citations = [mock_citation]
 
-        # Tool use block
+        # Server tool use block (web_search_20250305 uses server-side execution)
         mock_tool_block = Mock()
-        mock_tool_block.type = "tool_use"
+        mock_tool_block.type = "server_tool_use"
         mock_tool_block.name = "web_search"
 
         # Tool result block
         mock_result_block = Mock()
         mock_result_block.type = "web_search_tool_result"
         mock_result_item = Mock()
+        mock_result_item.type = "web_search_result"
         mock_result_item.url = "https://example.com/source"
         mock_result_block.content = [mock_result_item]
 
@@ -294,12 +298,14 @@ class TestAnthropicClient:
 
         assert enriched_text == "Enriched text with context"
         assert search_count == 1
-        assert "https://example.com/source" in sources
+        assert "https://example.com/citation" in sources  # From citations
+        assert "https://example.com/source" in sources  # From search results
 
         call_kwargs = mock_anthropic.messages.create.call_args[1]
         assert "tools" in call_kwargs
         assert call_kwargs["tools"][0]["type"] == "web_search_20250305"
         assert call_kwargs["tools"][0]["max_uses"] == 3
+        assert call_kwargs["max_tokens"] == 4096  # Verify max_tokens is set
 
     @pytest.mark.asyncio
     async def test_enrich_no_text_block_returns_original(self, client_with_mock):
@@ -308,7 +314,8 @@ class TestAnthropicClient:
 
         mock_message = Mock()
         mock_tool_block = Mock()
-        mock_tool_block.type = "tool_use"
+        mock_tool_block.type = "server_tool_use"
+        mock_tool_block.name = "web_search"
         mock_message.content = [mock_tool_block]
         mock_anthropic.messages.create = AsyncMock(return_value=mock_message)
 
@@ -316,7 +323,7 @@ class TestAnthropicClient:
 
         # Should fallback to original text
         assert enriched_text == "Original text"
-        assert search_count == 0
+        assert search_count == 1  # Tool was used but no text returned
 
     # ========================================================================
     # HTTP Error Handling Tests
@@ -496,6 +503,7 @@ class TestAnthropicClient:
         mock_text_block = Mock()
         mock_text_block.type = "text"
         mock_text_block.text = "Enriched"
+        mock_text_block.citations = None  # No citations in this test
         mock_message.content = [mock_text_block]
 
         mock_anthropic.messages.create = AsyncMock(side_effect=[api_error, mock_message])
