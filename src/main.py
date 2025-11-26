@@ -4,6 +4,8 @@ Entry point for the SMT-LIB pipeline service.
 """
 
 import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,8 +21,56 @@ configure_logging(settings.log_level)
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Application lifespan manager.
+
+    Handles startup and shutdown events using the modern lifespan pattern.
+    Validates critical configuration and eagerly loads the embedding model.
+    """
+    # Startup logic
+    logger.info(f"Starting {settings.api_title} v{settings.api_version}")
+
+    # CRITICAL: Validate required configuration
+    errors: list[str] = []
+
+    # Check embedding model
+    if not settings.embedding_model_name:
+        errors.append("EMBEDDING_MODEL_NAME is not set")
+
+    if errors:
+        error_msg = "CRITICAL CONFIGURATION ERRORS:\n" + "\n".join(f"  - {e}" for e in errors)
+        logger.critical(error_msg)
+        raise RuntimeError(error_msg)
+
+    logger.info(f"Using embedding model: {settings.embedding_model_name}")
+    logger.info("Configuration validation passed - all critical settings are present")
+
+    # CRITICAL: Eagerly initialize embedding model to prevent race conditions
+    # This prevents the smoke test race condition where requests arrive before
+    # the SentenceTransformer model finishes lazy initialization
+    logger.info("Eagerly loading embedding model...")
+    from src.api.dependencies import get_embedding_provider
+
+    embedding_provider = get_embedding_provider()
+
+    # Warmup: Run a test embedding to ensure model is fully initialized
+    # This triggers any lazy PyTorch initialization that happens on first encode()
+    logger.info("Running embedding warmup...")
+    await embedding_provider.embed("warmup")
+    logger.info("Embedding model fully initialized and ready")
+
+    # Application is now ready to handle requests
+    yield
+
+    # Shutdown logic
+    logger.info(f"Shutting down {settings.api_title}")
+
+
 # Create FastAPI application with enhanced metadata
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.api_title,
     version=settings.api_version,
     description="""
@@ -183,36 +233,6 @@ async def health_check():
         "version": settings.api_version,
         "embedding_model": settings.embedding_model_name,
     }
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Application startup event handler.
-
-    Validates critical configuration and fails fast if issues are detected.
-    """
-    logger.info(f"Starting {settings.api_title} v{settings.api_version}")
-
-    # CRITICAL: Validate required configuration
-    errors: list[str] = []
-
-    # Check embedding model
-    if not settings.embedding_model_name:
-        errors.append("EMBEDDING_MODEL_NAME is not set")
-
-    if errors:
-        error_msg = "CRITICAL CONFIGURATION ERRORS:\n" + "\n".join(f"  - {e}" for e in errors)
-        logger.critical(error_msg)
-        raise RuntimeError(error_msg)
-
-    logger.info(f"Using embedding model: {settings.embedding_model_name}")
-    logger.info("Configuration validation passed - all critical settings are present")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Application shutdown event handler."""
-    logger.info(f"Shutting down {settings.api_title}")
 
 
 if __name__ == "__main__":

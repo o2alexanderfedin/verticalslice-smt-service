@@ -1,0 +1,188 @@
+{
+  "investigation_date": "2025-11-26T11:30:00Z",
+  "deployment_version": "v1.14.2",
+  "timing": {
+    "deployment_completed_utc": "2025-11-26T02:31:47.149Z",
+    "smoke_test_started_utc": "2025-11-26T02:32:02.404Z",
+    "smoke_test_failed_utc": "2025-11-26T02:32:04.744Z",
+    "first_success_utc": "2025-11-26T02:32:08.937Z",
+    "application_startup_utc": "2025-11-26T02:29:42.606Z",
+    "model_loading_started_utc": "2025-11-26T02:32:03.314Z",
+    "model_loading_completed_utc": "2025-11-26T02:32:04.655Z",
+    "intervals": {
+      "deployment_to_smoke_test_seconds": 15,
+      "smoke_test_to_success_seconds": 4.2,
+      "estimated_initialization_seconds": 1.4,
+      "application_startup_to_deployment_complete_seconds": 125,
+      "smoke_test_start_to_first_process_request_seconds": 1.3
+    }
+  },
+  "production_health": {
+    "health_endpoint_status": 200,
+    "health_endpoint_response": {
+      "status": "healthy",
+      "service": "Semantic-Preserving SMT-LIB Pipeline",
+      "version": "0.1.0",
+      "embedding_model": "sentence-transformers/all-MiniLM-L6-v2"
+    },
+    "recent_errors_count": 0,
+    "uptime_hours": 9,
+    "enriched_text_field_working": true,
+    "test_results": {
+      "enrich_false_test_1": {
+        "input": "x > 5",
+        "enriched_text": "x > 5",
+        "enrichment_performed": false,
+        "status": "pass",
+        "note": "enriched_text correctly equals informal_text when enrichment disabled"
+      },
+      "enrich_false_test_2": {
+        "input": "test input",
+        "enriched_text": "test input",
+        "enrichment_performed": false,
+        "status": "pass",
+        "note": "Field consistently present and correct across multiple requests"
+      }
+    },
+    "production_url": "https://verticalslice-smt-service-gvav8.ondigitalocean.app",
+    "successful_requests_after_smoke_test": [
+      {
+        "timestamp": "2025-11-26T02:32:08.937Z",
+        "status": 200,
+        "duration_seconds": 4.18
+      },
+      {
+        "timestamp": "2025-11-26T02:32:13.536Z",
+        "status": 200,
+        "duration_seconds": 4.45
+      },
+      {
+        "timestamp": "2025-11-26T02:32:18.360Z",
+        "status": 200,
+        "duration_seconds": 4.67
+      }
+    ]
+  },
+  "root_cause": {
+    "hypothesis": "Race condition - smoke test ran before lazy initialization completed",
+    "confidence": "high",
+    "supporting_evidence": [
+      "Application startup completed 2 minutes before smoke test (02:29:42 vs 02:32:02)",
+      "Health checks passed immediately before failure",
+      "SentenceTransformer model loading started at same time as smoke test request (02:32:03)",
+      "Error is NotImplementedError from PyTorch concurrent tensor initialization",
+      "Application worked perfectly 4.2 seconds later without any code changes",
+      "No subsequent failures in 9 hours of production operation",
+      "Production logs show duplicate model loading attempts indicating concurrent initialization",
+      "Error message specifically references PyTorch internal state management issue"
+    ],
+    "contradicting_evidence": [],
+    "technical_details": {
+      "error_type": "NotImplementedError",
+      "error_message": "Cannot copy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from meta to a different device.",
+      "error_location": "src/infrastructure/embeddings/sentence_transformer.py:57 in __init__",
+      "pytorch_issue": "Concurrent initialization of SentenceTransformer models",
+      "initialization_pattern": "lazy (on-first-use)",
+      "concurrent_attempts": 2
+    }
+  },
+  "smoke_test_sequence": {
+    "test_1_root_redirect": {
+      "name": "Root Redirect",
+      "status": "PASSED",
+      "http_code": 307,
+      "timestamp": "2025-11-26T02:32:02.695Z"
+    },
+    "test_2_health_check": {
+      "name": "Health Check",
+      "status": "PASSED",
+      "http_code": 200,
+      "timestamp": "2025-11-26T02:32:02.907Z"
+    },
+    "test_3_openapi_schema": {
+      "name": "OpenAPI Schema",
+      "status": "PASSED",
+      "http_code": 200,
+      "timestamp": "2025-11-26T02:32:03.199Z"
+    },
+    "test_4_simple_pipeline_processing": {
+      "name": "Simple Pipeline Processing",
+      "status": "FAILED",
+      "expected_http_code": 200,
+      "actual_http_code": 500,
+      "timestamp": "2025-11-26T02:32:04.744Z",
+      "error": "Internal Server Error"
+    },
+    "test_5_empty_input_handling": {
+      "name": "Empty Input Handling",
+      "status": "PASSED",
+      "http_code": 422,
+      "timestamp": "2025-11-26T02:32:04.891Z"
+    },
+    "test_6_health_response_structure": {
+      "name": "Health Response Structure",
+      "status": "PASSED",
+      "timestamp": "2025-11-26T02:32:05.051Z"
+    }
+  },
+  "recommendations": [
+    {
+      "id": 1,
+      "title": "Implement Eager Initialization for Embedding Models",
+      "priority": "HIGH",
+      "effort": "LOW",
+      "description": "Move SentenceTransformer initialization from lazy (on-first-use) to eager (during application startup) to eliminate race condition window",
+      "benefits": [
+        "Eliminates race condition window entirely",
+        "First request latency becomes predictable",
+        "Smoke tests will accurately verify readiness",
+        "Better user experience (no cold-start delay)"
+      ],
+      "implementation": "Add @app.on_event('startup') handler that pre-loads embedding model",
+      "estimated_impact": "Solves root cause completely"
+    },
+    {
+      "id": 2,
+      "title": "Add Application Readiness Check",
+      "priority": "MEDIUM",
+      "effort": "LOW",
+      "description": "Create separate /ready endpoint that verifies all critical resources are initialized, distinct from /health which only checks if server is running",
+      "benefits": [
+        "Clear separation of concerns (health vs readiness)",
+        "Smoke tests can wait for full initialization",
+        "Kubernetes-compatible readiness probe",
+        "Better deployment orchestration"
+      ],
+      "implementation": "Add /ready endpoint that checks embedding_provider.is_loaded() and update smoke tests to poll this endpoint",
+      "estimated_impact": "Prevents future timing issues in smoke tests"
+    },
+    {
+      "id": 3,
+      "title": "Implement Singleton Pattern with Locking for Lazy Resources",
+      "priority": "LOW",
+      "effort": "MEDIUM",
+      "description": "If eager initialization is not desired, add proper locking to prevent concurrent initialization attempts",
+      "benefits": [
+        "Prevents concurrent initialization",
+        "Maintains lazy loading behavior",
+        "Thread-safe singleton pattern"
+      ],
+      "implementation": "Add threading.Lock() to SentenceTransformerProvider initialization",
+      "estimated_impact": "Reduces but doesn't eliminate timing sensitivity"
+    }
+  ],
+  "metadata": {
+    "investigator": "Claude Code",
+    "investigation_duration_minutes": 45,
+    "data_sources": [
+      "GitHub Actions workflow logs (run 19690360223)",
+      "Digital Ocean production logs (app d3ad0b2f-300b-4147-81fc-b876820ee3b9)",
+      "Production API testing",
+      "Deployment workflow configuration (.github/workflows/deploy.yml)",
+      "Smoke test script (.github/scripts/smoke-tests.sh)"
+    ],
+    "verification_status": "complete",
+    "production_impact": "none (transient smoke test failure only)",
+    "user_impact": "none (application fully functional for real traffic)"
+  }
+}
