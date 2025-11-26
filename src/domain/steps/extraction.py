@@ -5,7 +5,7 @@ Uses embedding distance to verify degradation ≤5%.
 """
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from src.domain.exceptions import ExtractionError
 from src.domain.models import ExtractionResult
@@ -31,7 +31,7 @@ class ExtractionStep:
         detail_start: float = 0.5,
         detail_step: float = 0.1,
         skip_retries_threshold: int = 50,
-        cache: Optional[AsyncFileCache] = None,
+        cache: AsyncFileCache | None = None,
     ):
         """Initialize extraction step.
 
@@ -72,7 +72,7 @@ class ExtractionStep:
         logger.info(f"Starting extraction (formal_text_length={len(formal_text)})")
 
         # Check cache if enabled
-        cache_key: Optional[str] = None
+        cache_key: str | None = None
         if self.cache:
             try:
                 cache_key = self.cache._generate_cache_key(formal_text, "extraction")

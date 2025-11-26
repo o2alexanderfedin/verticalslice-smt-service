@@ -6,7 +6,7 @@ This is an optional preprocessing step that runs before formalization.
 
 import logging
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from src.domain.exceptions import EnrichmentError
 from src.domain.models import EnrichmentResult
@@ -27,7 +27,7 @@ class EnrichmentStep:
         llm_provider: "LLMProvider",
         max_searches: int = 5,
         timeout: float = 60.0,
-        cache: Optional[AsyncFileCache] = None,
+        cache: AsyncFileCache | None = None,
     ):
         """Initialize enrichment step.
 
@@ -60,7 +60,7 @@ class EnrichmentStep:
         start_time = time.time()
 
         # Check cache if enabled
-        cache_key: Optional[str] = None
+        cache_key: str | None = None
         if self.cache:
             try:
                 cache_key = self.cache._generate_cache_key(input_text, "enrichment")

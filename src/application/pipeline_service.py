@@ -5,7 +5,7 @@ This is the application layer that coordinates domain logic.
 
 import logging
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from src.domain.exceptions import PipelineError
 from src.domain.models import EnrichmentResult, PipelineMetrics, VerifiedOutput
@@ -51,7 +51,7 @@ class PipelineService:
         self.semantic_verifier = EmbeddingDistanceVerifier()
 
         # Initialize cache if enabled
-        self.cache: Optional[AsyncFileCache] = None
+        self.cache: AsyncFileCache | None = None
         if settings.cache_enabled:
             self.cache = AsyncFileCache(
                 cache_dir=settings.cache_dir,
