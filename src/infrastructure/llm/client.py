@@ -303,12 +303,18 @@ whatever is needed to reduce information loss and correctly represent the formal
                 messages=[{"role": "user", "content": prompt}],
             )
 
-            fixed_code = message.content[0].text
+            raw_output = message.content[0].text
+
+            # CRITICAL: Extract pure SMT-LIB code from potentially mixed output
+            # LLMs may add preambles like "Here is..." despite instructions
+            from src.shared.smtlib_utils import extract_smtlib_code
+
+            fixed_code = extract_smtlib_code(raw_output)
 
             logger.info(
                 f"Error fix complete: "
-                f"input_length={len(smt_code)}, "
-                f"output_length={len(fixed_code)}"
+                f"raw_output_length={len(raw_output)}, "
+                f"extracted_code_length={len(fixed_code)}"
             )
 
             return fixed_code
