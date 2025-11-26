@@ -27,7 +27,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager.
 
     Handles startup and shutdown events using the modern lifespan pattern.
-    Validates critical configuration and eagerly loads the embedding model.
+    Validates critical configuration. The embedding model is loaded lazily
+    on first use for faster startup.
     """
     # Startup logic
     logger.info(f"Starting {settings.api_title} v{settings.api_version}")
@@ -47,19 +48,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info(f"Using embedding model: {settings.embedding_model_name}")
     logger.info("Configuration validation passed - all critical settings are present")
 
-    # CRITICAL: Eagerly initialize embedding model to prevent race conditions
-    # This prevents the smoke test race condition where requests arrive before
-    # the SentenceTransformer model finishes lazy initialization
-    logger.info("Eagerly loading embedding model...")
-    from src.api.dependencies import get_embedding_provider
-
-    embedding_provider = get_embedding_provider()
-
-    # Warmup: Run a test embedding to ensure model is fully initialized
-    # This triggers any lazy PyTorch initialization that happens on first encode()
-    logger.info("Running embedding warmup...")
-    await embedding_provider.embed("warmup")
-    logger.info("Embedding model fully initialized and ready")
+    # Embedding model will be loaded lazily on first use (async lazy loading pattern)
+    # This improves startup time while maintaining thread safety through asyncio.Task
+    logger.info("Application ready - embedding model will be loaded on first use")
 
     # Application is now ready to handle requests
     yield
