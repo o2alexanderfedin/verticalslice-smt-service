@@ -38,6 +38,7 @@ class TestPipelineService:
         settings.validation_max_retries = 3
         settings.enrichment_max_searches = 5
         settings.enrichment_timeout = 60.0
+        settings.cache_enabled = False  # Disable cache for unit tests
         return settings
 
     @pytest.fixture
