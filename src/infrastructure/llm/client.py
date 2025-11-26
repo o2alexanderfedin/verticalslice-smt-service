@@ -405,10 +405,15 @@ Search for definitions and background information as needed, then provide the en
             enriched_text = ""
             sources_used: list[str] = []
             search_count = 0
+            text_blocks: list[str] = []
 
-            for block in message.content:
+            logger.debug(f"Response has {len(message.content)} content blocks")
+            for i, block in enumerate(message.content):
+                logger.debug(f"Block {i}: type={block.type}")
                 if block.type == "text" and hasattr(block, "text"):
-                    enriched_text = block.text  # type: ignore[attr-defined]
+                    block_text = block.text  # type: ignore[attr-defined]
+                    logger.debug(f"Block {i} text length: {len(block_text)}")
+                    text_blocks.append(block_text)
                     # Extract citations from text blocks if available
                     if hasattr(block, "citations") and block.citations:
                         for citation in block.citations:  # type: ignore[attr-defined]
@@ -434,9 +439,15 @@ Search for definitions and background information as needed, then provide the en
                             ):
                                 sources_used.append(result.url)  # type: ignore[union-attr]
 
-            # If no text block found, use original text
-            if not enriched_text:
-                logger.warning("No enriched text in response, using original")
+            # Combine all text blocks (usually contains thinking + final enriched text)
+            if text_blocks:
+                # Take the longest text block as the enriched text (final response is usually longest)
+                enriched_text = max(text_blocks, key=len)
+                logger.debug(
+                    f"Selected longest text block: {len(enriched_text)} chars from {len(text_blocks)} blocks"
+                )
+            else:
+                logger.warning("No text blocks in response, using original")
                 enriched_text = text
 
             logger.info(
