@@ -94,6 +94,34 @@ class Settings(BaseSettings):
         description="Timeout for enrichment step in seconds",
     )
 
+    # Cache Configuration
+    cache_enabled: bool = Field(
+        default=True,
+        description="Enable file-based caching for pipeline steps",
+    )
+    cache_dir: str = Field(
+        default="./cache",
+        description="Directory for cache storage",
+    )
+    cache_default_ttl: int = Field(
+        default=7200,
+        ge=60,
+        le=86400,
+        description="Default cache TTL in seconds (default: 7200 = 2 hours)",
+    )
+    cache_max_size_mb: int = Field(
+        default=1024,
+        ge=100,
+        le=10240,
+        description="Maximum cache size in megabytes (default: 1024 = 1GB)",
+    )
+    cache_eviction_check_interval: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+        description="How often to check for LRU eviction in seconds (default: 300 = 5 min)",
+    )
+
     # CORS Configuration
     cors_allowed_origins: list[str] = Field(default=["*"], description="Allowed CORS origins")
 

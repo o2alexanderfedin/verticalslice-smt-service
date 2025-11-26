@@ -5,10 +5,11 @@ Uses embedding distance to verify degradation ≤5%.
 """
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from src.domain.exceptions import ExtractionError
 from src.domain.models import ExtractionResult
+from src.infrastructure.cache import AsyncFileCache
 from src.shared.result import Err, Ok, Result
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExtractionStep:
-    """Step 2: SMT-LIB extraction with degradation verification."""
+    """Step 2: SMT-LIB extraction with degradation verification and caching."""
 
     def __init__(
         self,
@@ -30,6 +31,7 @@ class ExtractionStep:
         detail_start: float = 0.5,
         detail_step: float = 0.1,
         skip_retries_threshold: int = 50,
+        cache: Optional[AsyncFileCache] = None,
     ):
         """Initialize extraction step.
 
@@ -42,6 +44,7 @@ class ExtractionStep:
             detail_start: Starting detail level (default 0.5)
             detail_step: Detail level increase per retry (default 0.1)
             skip_retries_threshold: Skip retries for texts shorter than this (default 50)
+            cache: Optional AsyncFileCache for caching extraction results
         """
         self.llm_provider = llm_provider
         self.embedding_provider = embedding_provider
@@ -51,9 +54,10 @@ class ExtractionStep:
         self.detail_start = detail_start
         self.detail_step = detail_step
         self.skip_retries_threshold = skip_retries_threshold
+        self.cache = cache
 
     async def execute(self, formal_text: str) -> Result[ExtractionResult, ExtractionError]:
-        """Execute extraction with retry logic.
+        """Execute extraction with retry logic and caching.
 
         CRITICAL OPTIMIZATION: Compute formal text embedding ONCE before loop,
         reuse in all iterations. Only compute SMT embedding for each attempt.
@@ -66,6 +70,29 @@ class ExtractionStep:
             Err(ExtractionError) if all retries exhausted
         """
         logger.info(f"Starting extraction (formal_text_length={len(formal_text)})")
+
+        # Check cache if enabled
+        cache_key: Optional[str] = None
+        if self.cache:
+            try:
+                cache_key = self.cache._generate_cache_key(formal_text, "extraction")
+                cached_result = await self.cache.get(cache_key)
+                if cached_result is not None:
+                    logger.info(
+                        f"Extraction cache hit: "
+                        f"smt_code_length={len(cached_result['smt_lib_code'])}, "
+                        f"degradation={cached_result['degradation']:.4f}"
+                    )
+                    return Ok(
+                        ExtractionResult(
+                            smt_lib_code=cached_result["smt_lib_code"],
+                            degradation=cached_result["degradation"],
+                            attempts=cached_result["attempts"],
+                        )
+                    )
+                logger.debug("Extraction cache miss")
+            except Exception as e:
+                logger.warning(f"Cache read failed (continuing without cache): {e}")
 
         try:
             # OPTIMIZATION: Compute formal text embedding ONCE
@@ -148,6 +175,20 @@ class ExtractionStep:
                         )
                     else:
                         logger.info(f"Extraction succeeded after {attempt + 1} attempts")
+
+                    # Store in cache if enabled
+                    if self.cache and cache_key:
+                        try:
+                            cache_data = {
+                                "smt_lib_code": smt_code,
+                                "degradation": degradation,
+                                "attempts": attempt + 1,
+                            }
+                            await self.cache.set(cache_key, cache_data)
+                            logger.debug(f"Stored extraction result in cache: {cache_key}")
+                        except Exception as e:
+                            logger.warning(f"Cache write failed (ignoring): {e}")
+
                     return Ok(
                         ExtractionResult(
                             smt_lib_code=smt_code, degradation=degradation, attempts=attempt + 1
@@ -170,6 +211,19 @@ class ExtractionStep:
 
         # Return best result if we have one
         if best_smt_code is not None:
+            # Store in cache even if degradation threshold not met
+            if self.cache and cache_key:
+                try:
+                    cache_data = {
+                        "smt_lib_code": best_smt_code,
+                        "degradation": best_degradation,
+                        "attempts": max_attempts,
+                    }
+                    await self.cache.set(cache_key, cache_data)
+                    logger.debug(f"Stored extraction result in cache: {cache_key}")
+                except Exception as e:
+                    logger.warning(f"Cache write failed (ignoring): {e}")
+
             return Ok(
                 ExtractionResult(
                     smt_lib_code=best_smt_code,

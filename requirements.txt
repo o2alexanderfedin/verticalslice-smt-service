@@ -34,6 +34,7 @@ cvc5>=1.1.2,<2.0.0
 # Utilities
 # ===========================
 python-multipart>=0.0.6,<1.0.0  # For form data handling if needed
+aiofiles>=23.0.0,<24.0.0  # For async file I/O (caching)
 
 # ===========================
 # Development & Testing

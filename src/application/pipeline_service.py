@@ -5,7 +5,7 @@ This is the application layer that coordinates domain logic.
 
 import logging
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from src.domain.exceptions import PipelineError
 from src.domain.models import EnrichmentResult, PipelineMetrics, VerifiedOutput
@@ -14,6 +14,7 @@ from src.domain.steps.extraction import ExtractionStep
 from src.domain.steps.formalization import FormalizationStep
 from src.domain.steps.validation import ValidationStep
 from src.domain.verification.embedding_verifier import EmbeddingDistanceVerifier
+from src.infrastructure.cache import AsyncFileCache
 from src.shared.result import Err, Ok, Result
 
 if TYPE_CHECKING:
@@ -48,6 +49,23 @@ class PipelineService:
 
         # Create semantic verifier (shared across steps)
         self.semantic_verifier = EmbeddingDistanceVerifier()
+
+        # Initialize cache if enabled
+        self.cache: Optional[AsyncFileCache] = None
+        if settings.cache_enabled:
+            self.cache = AsyncFileCache(
+                cache_dir=settings.cache_dir,
+                default_ttl=settings.cache_default_ttl,
+                max_size_mb=settings.cache_max_size_mb,
+                eviction_check_interval=settings.cache_eviction_check_interval,
+            )
+            logger.info(
+                f"Cache enabled: dir={settings.cache_dir}, "
+                f"ttl={settings.cache_default_ttl}s, "
+                f"max_size={settings.cache_max_size_mb}MB"
+            )
+        else:
+            logger.info("Cache disabled")
 
         logger.info("PipelineService initialized")
 
@@ -90,6 +108,7 @@ class PipelineService:
                 llm_provider=self.llm_provider,
                 max_searches=self.settings.enrichment_max_searches,
                 timeout=self.settings.enrichment_timeout,
+                cache=self.cache,
             )
 
             enrichment_result = await enrichment_step.execute(informal_text)
@@ -148,6 +167,7 @@ class PipelineService:
             detail_start=self.settings.extraction_detail_start,
             detail_step=self.settings.extraction_detail_step,
             skip_retries_threshold=self.settings.extraction_skip_retries_threshold,
+            cache=self.cache,
         )
 
         extraction_result = await extraction_step.execute(formal_text)
