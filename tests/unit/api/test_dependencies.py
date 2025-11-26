@@ -11,6 +11,8 @@ Tests cover:
 
 from unittest.mock import Mock
 
+import pytest
+
 from src.api.dependencies import (
     get_embedding_provider,
     get_llm_provider,
@@ -98,9 +100,13 @@ class TestDependencies:
     # Embedding Provider Tests
     # ========================================================================
 
-    def test_get_embedding_provider_returns_sentence_transformer(self, mocker):
+    @pytest.mark.asyncio
+    async def test_get_embedding_provider_returns_sentence_transformer(self, mocker):
         """Test get_embedding_provider returns SentenceTransformerProvider."""
-        get_embedding_provider.cache_clear()
+        # Reset singleton
+        import src.api.dependencies as deps
+
+        deps._embedding_provider_task = None
         get_settings.cache_clear()
 
         # Mock SentenceTransformer to avoid loading real model
@@ -108,13 +114,17 @@ class TestDependencies:
         mock_model.get_sentence_embedding_dimension.return_value = 384
         mocker.patch("sentence_transformers.SentenceTransformer", return_value=mock_model)
 
-        provider = get_embedding_provider()
+        provider = await get_embedding_provider()
 
         assert isinstance(provider, SentenceTransformerProvider)
 
-    def test_get_embedding_provider_is_cached(self, mocker):
+    @pytest.mark.asyncio
+    async def test_get_embedding_provider_is_cached(self, mocker):
         """Test get_embedding_provider returns same instance (singleton)."""
-        get_embedding_provider.cache_clear()
+        # Reset singleton
+        import src.api.dependencies as deps
+
+        deps._embedding_provider_task = None
         get_settings.cache_clear()
 
         # Mock to avoid loading model
@@ -122,15 +132,19 @@ class TestDependencies:
         mock_model.get_sentence_embedding_dimension.return_value = 384
         mocker.patch("sentence_transformers.SentenceTransformer", return_value=mock_model)
 
-        provider1 = get_embedding_provider()
-        provider2 = get_embedding_provider()
+        provider1 = await get_embedding_provider()
+        provider2 = await get_embedding_provider()
 
         # Should be same object (cached)
         assert provider1 is provider2
 
-    def test_embedding_provider_uses_settings_model_name(self, mocker):
+    @pytest.mark.asyncio
+    async def test_embedding_provider_uses_settings_model_name(self, mocker):
         """Test embedding provider uses model name from settings."""
-        get_embedding_provider.cache_clear()
+        # Reset singleton
+        import src.api.dependencies as deps
+
+        deps._embedding_provider_task = None
         get_settings.cache_clear()
 
         mock_model = Mock()
@@ -141,7 +155,7 @@ class TestDependencies:
             return_value=mock_model,
         )
 
-        get_embedding_provider()
+        await get_embedding_provider()
 
         # Should have been called with model name from settings
         settings = get_settings()
@@ -202,10 +216,14 @@ class TestDependencies:
     # Pipeline Service Tests
     # ========================================================================
 
-    def test_get_pipeline_service_returns_pipeline_service(self, mocker):
+    @pytest.mark.asyncio
+    async def test_get_pipeline_service_returns_pipeline_service(self, mocker):
         """Test get_pipeline_service returns PipelineService."""
         get_settings.cache_clear()
-        get_embedding_provider.cache_clear()
+        # Reset singleton
+        import src.api.dependencies as deps
+
+        deps._embedding_provider_task = None
         get_llm_provider.cache_clear()
         get_smt_solver.cache_clear()
 
@@ -216,14 +234,18 @@ class TestDependencies:
         mocker.patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-key"})
         mocker.patch("anthropic.AsyncAnthropic")
 
-        service = get_pipeline_service()
+        service = await get_pipeline_service()
 
         assert isinstance(service, PipelineService)
 
-    def test_get_pipeline_service_not_cached(self, mocker):
+    @pytest.mark.asyncio
+    async def test_get_pipeline_service_not_cached(self, mocker):
         """Test get_pipeline_service returns new instance each time (not cached)."""
         get_settings.cache_clear()
-        get_embedding_provider.cache_clear()
+        # Reset singleton
+        import src.api.dependencies as deps
+
+        deps._embedding_provider_task = None
         get_llm_provider.cache_clear()
         get_smt_solver.cache_clear()
 
@@ -234,16 +256,20 @@ class TestDependencies:
         mocker.patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-key"})
         mocker.patch("anthropic.AsyncAnthropic")
 
-        service1 = get_pipeline_service()
-        service2 = get_pipeline_service()
+        service1 = await get_pipeline_service()
+        service2 = await get_pipeline_service()
 
         # Should be different objects (not cached)
         assert service1 is not service2
 
-    def test_pipeline_service_has_all_dependencies(self, mocker):
+    @pytest.mark.asyncio
+    async def test_pipeline_service_has_all_dependencies(self, mocker):
         """Test pipeline service is initialized with all dependencies."""
         get_settings.cache_clear()
-        get_embedding_provider.cache_clear()
+        # Reset singleton
+        import src.api.dependencies as deps
+
+        deps._embedding_provider_task = None
         get_llm_provider.cache_clear()
         get_smt_solver.cache_clear()
 
@@ -254,7 +280,7 @@ class TestDependencies:
         mocker.patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-key"})
         mocker.patch("anthropic.AsyncAnthropic")
 
-        service = get_pipeline_service()
+        service = await get_pipeline_service()
 
         # Verify service has dependencies
         assert service.embedding_provider is not None
@@ -262,10 +288,14 @@ class TestDependencies:
         assert service.smt_solver is not None
         assert service.settings is not None
 
-    def test_pipeline_service_uses_singleton_dependencies(self, mocker):
+    @pytest.mark.asyncio
+    async def test_pipeline_service_uses_singleton_dependencies(self, mocker):
         """Test pipeline service uses singleton instances of dependencies."""
         get_settings.cache_clear()
-        get_embedding_provider.cache_clear()
+        # Reset singleton
+        import src.api.dependencies as deps
+
+        deps._embedding_provider_task = None
         get_llm_provider.cache_clear()
         get_smt_solver.cache_clear()
 
@@ -278,12 +308,12 @@ class TestDependencies:
 
         # Get singletons
         settings = get_settings()
-        embedding_provider = get_embedding_provider()
+        embedding_provider = await get_embedding_provider()
         llm_provider = get_llm_provider()
         smt_solver = get_smt_solver()
 
         # Create service
-        service = get_pipeline_service()
+        service = await get_pipeline_service()
 
         # Service should use same singleton instances
         assert service.settings is settings

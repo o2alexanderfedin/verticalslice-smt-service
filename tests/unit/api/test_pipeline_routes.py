@@ -75,7 +75,11 @@ class TestPipelineRoutes:
         from src.main import app
 
         # Override the FastAPI dependency
-        app.dependency_overrides[get_pipeline_service] = lambda: mock_pipeline_service
+        # Note: get_pipeline_service is now async, so we need an async override
+        async def override_get_pipeline_service():
+            return mock_pipeline_service
+
+        app.dependency_overrides[get_pipeline_service] = override_get_pipeline_service
 
         client = TestClient(app)
         yield client, mock_pipeline_service
