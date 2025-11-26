@@ -151,23 +151,29 @@ Structure: Phase comments + set-info + set-logic + declarations + assertions + c
 NO explanatory text before/after the code block."""
 
 
-ERROR_FIXING_PROMPT = """You are an expert in SMT-LIB syntax and semantics. Your task is to fix errors in SMT-LIB code while preserving all annotations and comments.
+ERROR_FIXING_PROMPT = """You are an expert in SMT-LIB syntax. Fix the code and respond with ONLY the fixed code inside <smtlib></smtlib> tags.
 
-**Task**: Fix the following SMT-LIB code that produced an error.
+CRITICAL RESPONSE FORMAT:
+- Start your response IMMEDIATELY with <smtlib>
+- Put the fixed SMT-LIB code inside the tags
+- End with </smtlib>
+- Do NOT add any text before or after the tags
+- Do NOT use markdown code blocks
+- Do NOT add explanations
 
-**Requirements**:
-1. Fix the syntax or semantic error
-2. Preserve ALL comments and annotations
-3. Do NOT change the logic or constraints (only fix errors)
-4. Ensure the output is valid SMT-LIB 2.6 syntax
+FIXING REQUIREMENTS:
+1. Fix the syntax or semantic error shown below
+2. Preserve ALL comments and annotations exactly as they are
+3. Do NOT change the logic or constraints (only fix the error)
+4. Ensure output is valid SMT-LIB 2.6 syntax
 
-**Original SMT-LIB Code**:
+ORIGINAL CODE:
 {smt_code}
 
-**Error Message**:
+ERROR:
 {error_message}
 
-**Your Fixed SMT-LIB Code** (respond with ONLY the corrected code, preserving all comments):"""
+RESPOND NOW WITH <smtlib>YOUR_FIXED_CODE_HERE</smtlib>:"""
 
 
 def get_formalization_prompt(informal_text: str) -> str:
