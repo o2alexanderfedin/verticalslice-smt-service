@@ -85,6 +85,18 @@ class ProcessResponse(BaseModel):
         default=False,
         description="Whether web search enrichment was performed on the input",
     )
+    enriched_text: str = Field(
+        description=(
+            "Text after enrichment step. If enrichment was performed (enrich=true), "
+            "this contains the input text enhanced with domain knowledge from web searches. "
+            "If enrichment was not performed (enrich=false or default), "
+            "this equals the original informal_text."
+        ),
+        examples=[
+            "The variable x must be greater than 5 and less than 10. "
+            "Background: In mathematics, a variable is a symbol that represents a value in equations."
+        ],
+    )
     enrichment_search_count: int | None = Field(
         default=None,
         description="Number of web searches performed during enrichment (if enabled)",
@@ -273,6 +285,7 @@ class ProcessResponse(BaseModel):
         return cls(
             informal_text=output.informal_text,
             enrichment_performed=output.enrichment_performed,
+            enriched_text=output.enriched_text,
             enrichment_search_count=output.enrichment_search_count,
             enrichment_sources=output.enrichment_sources,
             enrichment_time_seconds=output.enrichment_time_seconds,

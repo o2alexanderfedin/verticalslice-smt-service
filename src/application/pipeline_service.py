@@ -211,6 +211,7 @@ class PipelineService:
         verified_output = VerifiedOutput(
             informal_text=informal_text,
             enrichment_performed=enrichment_output is not None,
+            enriched_text=(enrichment_output.enriched_text if enrichment_output else informal_text),
             enrichment_search_count=(enrichment_output.search_count if enrichment_output else None),
             enrichment_sources=enrichment_output.sources_used if enrichment_output else None,
             enrichment_time_seconds=(

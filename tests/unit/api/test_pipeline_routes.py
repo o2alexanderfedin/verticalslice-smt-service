@@ -46,6 +46,7 @@ class TestPipelineRoutes:
         output = VerifiedOutput(
             informal_text="x must be greater than 5",
             enrichment_performed=False,
+            enriched_text="x must be greater than 5",
             enrichment_search_count=None,
             enrichment_sources=None,
             enrichment_time_seconds=None,
@@ -255,6 +256,7 @@ class TestPipelineRoutes:
         output_with_enrichment = VerifiedOutput(
             informal_text="test",
             enrichment_performed=True,
+            enriched_text="test with additional context from web search",
             enrichment_search_count=3,
             enrichment_sources=["https://example.com"],
             enrichment_time_seconds=2.5,

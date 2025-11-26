@@ -174,6 +174,9 @@ class VerifiedOutput(BaseModel):
     enrichment_performed: bool = Field(
         default=False, description="Whether web search enrichment was performed"
     )
+    enriched_text: str = Field(
+        description="Text after enrichment (equals informal_text if enrichment not performed)"
+    )
     enrichment_search_count: int | None = Field(
         default=None, description="Number of web searches performed during enrichment"
     )
