@@ -73,6 +73,43 @@ REQUIRED OUTPUT (in SMT-LIB comments):
 ; Non-linearity: [YES/NO]
 ; Uninterpreted Functions: [list any needed, or NONE]
 
+LOGIC CONSISTENCY RULES (CRITICAL - MUST FOLLOW):
+1. **QF_LIA / QF_LRA**: Linear Integer/Real Arithmetic
+   - ✅ Supports: declare-const, linear constraints (+, -, *, /, <, >, =, <=, >=)
+   - ❌ DOES NOT support: declare-fun with arity > 0 (uninterpreted functions)
+   - ❌ DOES NOT support: non-linear operations (multiplication of variables)
+   - If you need functions: Use QF_UFLIA or QF_UFRA instead
+
+2. **QF_UFLIA / QF_UFRA**: Linear Arithmetic WITH Uninterpreted Functions
+   - ✅ Supports: Everything from QF_LIA/QF_LRA PLUS declare-fun
+   - Use when: Need to link constraints or model relationships via functions
+
+3. **QF_NIA / QF_NRA**: Non-linear Integer/Real Arithmetic
+   - ✅ Supports: Non-linear operations (x * y, x^2, etc.)
+   - ❌ DOES NOT support: uninterpreted functions
+   - Use when: Need multiplication/division of variables
+
+4. **QF_UFNIA / QF_UFNRA**: Non-linear Arithmetic WITH Uninterpreted Functions
+   - ✅ Supports: Everything - non-linear operations AND functions
+   - Use when: Complex formulas with both non-linearity and function linking
+
+COMMON MISTAKE TO AVOID:
+❌ WRONG: (set-logic QF_LRA) + (declare-fun f (Real Real) Real)
+   ERROR: "Functions cannot be declared in logic QF_LRA"
+
+✅ CORRECT Option 1: (set-logic QF_UFRA) + (declare-fun f (Real Real) Real)
+✅ CORRECT Option 2: (set-logic QF_LRA) + no functions, use direct constraints only
+
+WHEN TO USE UNINTERPRETED FUNCTIONS:
+- To link independent constraints (see Phase 4 pattern below)
+- To model unknown relationships between variables
+- When the exact formula is unknown but constraints on the relationship are known
+
+WHEN TO AVOID UNINTERPRETED FUNCTIONS:
+- Simple constraints that don't need linking (e.g., "x < 10")
+- When you can express the relationship directly (e.g., thermal expansion formula)
+- Satisfiability queries that don't require computing exact values
+
 ## Phase 4: SMT-LIB Encoding with Uninterpreted Function Linking
 CRITICAL REQUIREMENTS:
 1. Declare ALL constants/variables explicitly with correct sorts
@@ -219,6 +256,24 @@ Fix the SMT-LIB syntax error. Based on the error location and context:
 - The informal text is the ground truth for what constraints must be expressed
 - Preserve ALL phase comments and annotations exactly as they are
 - Ensure output is valid SMT-LIB 2.6 syntax for cvc5
+
+LOGIC CONSISTENCY FIX PATTERNS:
+If error says "Functions cannot be declared in logic QF_LRA" or "Try including UF":
+  ❌ Problem: Using (declare-fun ...) with a logic that doesn't support uninterpreted functions
+  ✅ Fix Option 1 (RECOMMENDED): Remove uninterpreted functions, use direct constraints only
+     Example: Replace (declare-fun f (Real Real) Real) + (assert (= x (f y z)))
+              With: (declare-const x Real) + direct constraint linking x, y, z
+  ✅ Fix Option 2: Change logic to support functions
+     Example: Change (set-logic QF_LRA) to (set-logic QF_UFRA)
+              Change (set-logic QF_LIA) to (set-logic QF_UFLIA)
+              Change (set-logic QF_NRA) to (set-logic QF_UFNRA)
+
+If error says "Non-linear arithmetic" or "not in linear fragment":
+  ❌ Problem: Using non-linear operations (x * y, x^2) with linear logic
+  ✅ Fix: Change logic from QF_LRA to QF_NRA (or QF_LIA to QF_NIA)
+
+IMPORTANT: When choosing between options, prefer Option 1 (simplify) unless the uninterpreted
+function is essential for modeling the constraint correctly.
 </guidelines>
 
 <response_format>
