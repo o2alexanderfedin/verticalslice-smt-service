@@ -342,3 +342,235 @@ class TestValidationStep:
         assert isinstance(result, Ok)
         assert result.value.attempts == 3
         assert mock_llm_provider.fix_smt_errors.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_context_rich_fixes_when_text_provided(
+        self, step: ValidationStep, mock_llm_provider, mock_smt_solver
+    ) -> None:
+        """Test that context-rich LLM fixing is used when informal/formal text provided."""
+        broken_code = "(assert > x 5)"
+        fixed_code = "(assert (> x 5))"
+        informal_text = "x must be greater than 5"
+        formal_text = "x is greater than 5"
+
+        # First attempt fails, second succeeds
+        mock_smt_solver.execute = AsyncMock(
+            side_effect=[
+                {
+                    "success": False,
+                    "check_sat_result": "error",
+                    "model": None,
+                    "unsat_core": None,
+                    "raw_output": "Parse Error: file.smt2:1.8: Expected RPAREN_TOK",
+                },
+                {
+                    "success": True,
+                    "check_sat_result": "sat",
+                    "model": "(define-fun x () Int 10)",
+                    "unsat_core": None,
+                    "raw_output": "sat\n(define-fun x () Int 10)",
+                },
+            ]
+        )
+
+        mock_llm_provider.fix_smt_errors_with_context = AsyncMock(return_value=fixed_code)
+
+        result = await step.execute(
+            broken_code, informal_text=informal_text, formal_text=formal_text
+        )
+
+        assert isinstance(result, Ok)
+        assert result.value.success is True
+        assert result.value.attempts == 2
+
+        # Verify context-rich LLM was called with all context
+        mock_llm_provider.fix_smt_errors_with_context.assert_called_once()
+        call_kwargs = mock_llm_provider.fix_smt_errors_with_context.call_args.kwargs
+        assert call_kwargs["informal_text"] == informal_text
+        assert call_kwargs["formal_text"] == formal_text
+        assert call_kwargs["smt_code"] == broken_code
+        assert "Parse Error" in call_kwargs["error_message"]
+        assert call_kwargs["attempt_number"] == 1
+        assert call_kwargs["previous_attempts"] == []
+
+    @pytest.mark.asyncio
+    async def test_context_rich_fixes_tracks_attempt_history(
+        self, step: ValidationStep, mock_llm_provider, mock_smt_solver
+    ) -> None:
+        """Test that attempt history is tracked when using context-rich fixes."""
+        initial_code = "(broken 1)"
+        fix_1 = "(broken 2)"
+        informal_text = "x > 5"
+        formal_text = "x is greater than 5"
+
+        mock_smt_solver.execute = AsyncMock(
+            side_effect=[
+                {
+                    "success": False,
+                    "check_sat_result": "error",
+                    "model": None,
+                    "unsat_core": None,
+                    "raw_output": "Error 1",
+                },
+                {
+                    "success": False,
+                    "check_sat_result": "error",
+                    "model": None,
+                    "unsat_core": None,
+                    "raw_output": "Error 2",
+                },
+            ]
+        )
+
+        mock_llm_provider.fix_smt_errors_with_context = AsyncMock(return_value=fix_1)
+
+        result = await step.execute(
+            initial_code, informal_text=informal_text, formal_text=formal_text
+        )
+
+        # Should fail after max retries
+        assert isinstance(result, Err)
+        assert isinstance(result.error, ValidationError)
+        assert result.error.attempts == 3
+
+        # Verify attempt history was tracked
+        assert result.error.attempt_history is not None
+        assert len(result.error.attempt_history) == 3
+
+        # Check first attempt
+        first_attempt = result.error.attempt_history[0]
+        assert first_attempt["attempt_number"] == 1
+        assert first_attempt["smt_code"] == initial_code
+        assert first_attempt["solver_error"] == "Error 1"
+        assert first_attempt["fix_attempted"] == fix_1
+
+        # Check second attempt
+        second_attempt = result.error.attempt_history[1]
+        assert second_attempt["attempt_number"] == 2
+        assert second_attempt["smt_code"] == fix_1
+        assert second_attempt["solver_error"] == "Error 2"
+
+    @pytest.mark.asyncio
+    async def test_basic_fixes_used_when_no_context_provided(
+        self, step: ValidationStep, mock_llm_provider, mock_smt_solver
+    ) -> None:
+        """Test that basic LLM fixing is used when no informal/formal text provided."""
+        broken_code = "(assert > x 5)"
+        fixed_code = "(assert (> x 5))"
+
+        mock_smt_solver.execute = AsyncMock(
+            side_effect=[
+                {
+                    "success": False,
+                    "check_sat_result": "error",
+                    "model": None,
+                    "unsat_core": None,
+                    "raw_output": "Parse error",
+                },
+                {
+                    "success": True,
+                    "check_sat_result": "sat",
+                    "model": None,
+                    "unsat_core": None,
+                    "raw_output": "sat",
+                },
+            ]
+        )
+
+        mock_llm_provider.fix_smt_errors = AsyncMock(return_value=fixed_code)
+
+        result = await step.execute(broken_code)
+
+        assert isinstance(result, Ok)
+        assert result.value.attempts == 2
+
+        # Verify basic LLM was called (not context-rich)
+        mock_llm_provider.fix_smt_errors.assert_called_once()
+        mock_llm_provider.fix_smt_errors_with_context.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_attempt_history_passed_to_subsequent_fixes(
+        self, step: ValidationStep, mock_llm_provider, mock_smt_solver
+    ) -> None:
+        """Test that previous attempt history is passed to LLM on subsequent fixes."""
+        initial_code = "(broken 1)"
+        fix_1 = "(broken 2)"
+        fix_2 = "(broken 3)"
+        informal_text = "x > 5"
+        formal_text = "x is greater than 5"
+
+        mock_smt_solver.execute = AsyncMock(
+            side_effect=[
+                {
+                    "success": False,
+                    "check_sat_result": "error",
+                    "model": None,
+                    "unsat_core": None,
+                    "raw_output": "Error 1",
+                },
+                {
+                    "success": False,
+                    "check_sat_result": "error",
+                    "model": None,
+                    "unsat_core": None,
+                    "raw_output": "Error 2",
+                },
+                {
+                    "success": False,
+                    "check_sat_result": "error",
+                    "model": None,
+                    "unsat_core": None,
+                    "raw_output": "Error 3",
+                },
+            ]
+        )
+
+        mock_llm_provider.fix_smt_errors_with_context = AsyncMock(side_effect=[fix_1, fix_2])
+
+        result = await step.execute(
+            initial_code, informal_text=informal_text, formal_text=formal_text
+        )
+
+        assert isinstance(result, Err)
+
+        # Verify first fix call had empty history
+        first_call = mock_llm_provider.fix_smt_errors_with_context.call_args_list[0].kwargs
+        assert first_call["attempt_number"] == 1
+        assert first_call["previous_attempts"] == []
+
+        # Verify second fix call had first attempt in history
+        second_call = mock_llm_provider.fix_smt_errors_with_context.call_args_list[1].kwargs
+        assert second_call["attempt_number"] == 2
+        assert len(second_call["previous_attempts"]) == 1
+        assert second_call["previous_attempts"][0]["attempt_number"] == 1
+        assert second_call["previous_attempts"][0]["smt_code"] == initial_code
+
+    @pytest.mark.asyncio
+    async def test_validation_error_contains_informal_formal_text(
+        self, step: ValidationStep, mock_llm_provider, mock_smt_solver
+    ) -> None:
+        """Test that ValidationError includes informal/formal text for diagnostics."""
+        smt_code = "(broken)"
+        informal_text = "x > 5"
+        formal_text = "x is greater than 5"
+
+        mock_smt_solver.execute = AsyncMock(
+            return_value={
+                "success": False,
+                "check_sat_result": "error",
+                "model": None,
+                "unsat_core": None,
+                "raw_output": "Syntax error",
+            }
+        )
+
+        mock_llm_provider.fix_smt_errors_with_context = AsyncMock(return_value="(still broken)")
+
+        result = await step.execute(smt_code, informal_text=informal_text, formal_text=formal_text)
+
+        assert isinstance(result, Err)
+        assert isinstance(result.error, ValidationError)
+        assert result.error.informal_text == informal_text
+        assert result.error.formal_text == formal_text
+        assert result.error.smt_code == "(still broken)"  # Last attempted code
+        assert "Syntax error" in result.error.last_error

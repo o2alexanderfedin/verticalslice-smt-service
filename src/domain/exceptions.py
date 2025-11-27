@@ -29,12 +29,35 @@ class ExtractionError(PipelineError):
 
 
 class ValidationError(PipelineError):
-    """Raised when validation step fails to execute successfully."""
+    """Raised when validation step fails to execute successfully.
 
-    def __init__(self, message: str, last_error: str, attempts: int):
+    Attributes:
+        message: Human-readable error message
+        last_error: Last error message from the solver
+        smt_code: The SMT-LIB code that failed validation
+        attempts: Number of attempts made before failure
+        informal_text: Original informal constraint (for diagnostics)
+        formal_text: Formalized constraint (for diagnostics)
+        attempt_history: History of all attempts (for diagnostics)
+    """
+
+    def __init__(
+        self,
+        message: str,
+        last_error: str,
+        attempts: int,
+        smt_code: str = "",
+        informal_text: str = "",
+        formal_text: str = "",
+        attempt_history: list[dict[str, str]] | None = None,
+    ):
         super().__init__(message)
         self.last_error = last_error
         self.attempts = attempts
+        self.smt_code = smt_code
+        self.informal_text = informal_text
+        self.formal_text = formal_text
+        self.attempt_history = attempt_history or []
 
 
 class LLMError(PipelineError):

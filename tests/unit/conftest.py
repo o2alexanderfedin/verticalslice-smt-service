@@ -31,6 +31,8 @@ def mock_llm_provider() -> AsyncMock:
     mock = AsyncMock()
     mock.formalize = AsyncMock(return_value="Formal text output")
     mock.extract = AsyncMock(return_value="(declare-const x Int)\n(assert (> x 5))\n(check-sat)")
+    mock.fix_smt_errors = AsyncMock(return_value="(fixed code)")
+    mock.fix_smt_errors_with_context = AsyncMock(return_value="(fixed code)")
     return mock
 
 
