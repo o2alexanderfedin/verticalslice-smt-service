@@ -10,6 +10,7 @@ for handling transient API failures.
 
 import logging
 import os
+from typing import Any
 
 import anthropic
 
@@ -17,8 +18,10 @@ from src.infrastructure.llm.prompts import (
     ERROR_FIXING_PROMPT,
     EXTRACTION_PROMPT,
     FORMALIZATION_PROMPT,
+    get_error_fixing_with_context_prompt,
 )
 from src.shared.retry import retry_with_backoff
+from src.shared.smt_diagnostics import SMTErrorContext, build_error_location
 
 logger = logging.getLogger(__name__)
 
@@ -321,6 +324,112 @@ whatever is needed to reduce information loss and correctly represent the formal
 
         except anthropic.APIError as e:
             logger.error(f"Anthropic API error in fix_smt_errors: {e}")
+            raise
+
+    @retry_with_backoff(
+        max_retries=3,
+        initial_delay=1.0,
+        exceptions=(anthropic.APIError, anthropic.APITimeoutError),
+    )
+    async def fix_smt_errors_with_context(
+        self,
+        informal_text: str,
+        formal_text: str,
+        smt_code: str,
+        error_message: str,
+        previous_attempts: list[dict[str, Any]],
+        attempt_number: int,
+    ) -> str:
+        """
+        Fix SMT-LIB syntax errors with full semantic context.
+
+        This method provides richer context to the LLM for better error fixing,
+        including the original intent (informal + formal text), parsed error
+        location with code context, and history of previous attempts. This
+        improves fix quality compared to the simple fix_smt_errors.
+
+        Args:
+            informal_text: Original informal constraint from user
+            formal_text: Formalized version of the constraint
+            smt_code: Current SMT-LIB code with error
+            error_message: Error message from solver
+            previous_attempts: History of previous fix attempts
+            attempt_number: Current attempt number (1-indexed)
+
+        Returns:
+            Fixed SMT-LIB code (should execute without errors)
+
+        Raises:
+            anthropic.APIError: If API call fails after retries
+        """
+        logger.debug(
+            f"Calling fix_smt_errors_with_context (attempt {attempt_number}) with "
+            f"code_length={len(smt_code)}, "
+            f"error={error_message[:100]}, "
+            f"previous_attempts={len(previous_attempts)}"
+        )
+
+        # Build error location context by parsing the error message
+        error_location = build_error_location(smt_code, error_message)
+
+        # Build full context object
+        context = SMTErrorContext(
+            smt_code=smt_code,
+            error_message=error_message,
+            error_location=error_location,
+            informal_text=informal_text,
+            formal_text=formal_text,
+            previous_attempts=previous_attempts,
+            attempt_number=attempt_number,
+        )
+
+        # Generate XML-formatted context for prompt
+        error_summary_xml = context.get_error_summary_xml()
+        previous_fixes_xml = context.get_previous_fixes_summary_xml()
+
+        # Build context-rich prompt
+        prompt = get_error_fixing_with_context_prompt(
+            informal_text=informal_text,
+            formal_text=formal_text,
+            smt_code=smt_code,
+            error_summary_xml=error_summary_xml,
+            previous_fixes_xml=previous_fixes_xml,
+            num_attempts=attempt_number,
+        )
+
+        logger.debug(
+            f"Generated context-rich prompt with "
+            f"error_location={'parsed' if error_location else 'unparsed'}, "
+            f"context_lines={len(error_location.context_before) if error_location else 0}"
+        )
+
+        try:
+            message = await self._client.messages.create(
+                model=self._model,
+                max_tokens=4096,
+                temperature=0.0,  # Deterministic for code fixing
+                messages=[{"role": "user", "content": prompt}],
+            )
+
+            raw_output = message.content[0].text
+
+            # CRITICAL: Extract pure SMT-LIB code from potentially mixed output
+            # LLMs may add preambles like "Here is..." despite instructions
+            from src.shared.smtlib_utils import extract_smtlib_code
+
+            fixed_code = extract_smtlib_code(raw_output)
+
+            logger.info(
+                f"Context-rich error fix complete: "
+                f"attempt={attempt_number}, "
+                f"raw_output_length={len(raw_output)}, "
+                f"extracted_code_length={len(fixed_code)}"
+            )
+
+            return fixed_code
+
+        except anthropic.APIError as e:
+            logger.error(f"Anthropic API error in fix_smt_errors_with_context: {e}")
             raise
 
     @retry_with_backoff(

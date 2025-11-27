@@ -195,7 +195,11 @@ class PipelineService:
             solver_timeout=30.0,
         )
 
-        validation_result = await validation_step.execute(smt_code)
+        validation_result = await validation_step.execute(
+            smt_code,
+            informal_text=informal_text,
+            formal_text=formal_text,
+        )
         validation_time = time.time() - validation_start
 
         match validation_result:

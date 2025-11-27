@@ -105,6 +105,10 @@ class EnrichmentStep:
             )
 
             # Store in cache if enabled
+            # SAFETY: This cache write only executes after successful API call.
+            # If enrich_with_web_search() raises any exception (HTTP 500, 504, 429,
+            # timeout, connection error), execution jumps to except block at line 130,
+            # preventing this cache write. See docs/cache-safety-verification.md
             if self.cache and cache_key:
                 try:
                     cache_data = {

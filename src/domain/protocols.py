@@ -91,6 +91,37 @@ class LLMProvider(Protocol):
         """
         ...
 
+    async def fix_smt_errors_with_context(
+        self,
+        informal_text: str,
+        formal_text: str,
+        smt_code: str,
+        error_message: str,
+        previous_attempts: list[dict[str, Any]],
+        attempt_number: int,
+    ) -> str:
+        """Fix SMT-LIB syntax errors with full semantic context.
+
+        This method provides richer context to the LLM for better error fixing,
+        including the original intent, error location, and history of previous
+        attempts. This improves fix quality compared to the simple fix_smt_errors.
+
+        Args:
+            informal_text: Original informal constraint from user
+            formal_text: Formalized version of the constraint
+            smt_code: Current SMT-LIB code with error
+            error_message: Error message from solver
+            previous_attempts: History of previous fix attempts
+            attempt_number: Current attempt number (1-indexed)
+
+        Returns:
+            Fixed SMT-LIB code
+
+        Raises:
+            LLMError: If LLM call fails
+        """
+        ...
+
     async def enrich_with_web_search(
         self,
         text: str,

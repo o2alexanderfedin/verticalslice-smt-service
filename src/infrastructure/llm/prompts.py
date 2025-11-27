@@ -176,6 +176,62 @@ ERROR:
 RESPOND NOW WITH <smtlib>YOUR_FIXED_CODE_HERE</smtlib>:"""
 
 
+ERROR_FIXING_WITH_CONTEXT_PROMPT = """You are an expert at fixing SMT-LIB syntax errors.
+
+<original_intent>
+The user wanted to express this constraint:
+
+<informal_text>
+{informal_text}
+</informal_text>
+
+Which was formalized as:
+
+<formal_text>
+{formal_text}
+</formal_text>
+</original_intent>
+
+<current_smt_code>
+{smt_code}
+</current_smt_code>
+
+{error_summary_xml}
+
+{previous_fixes_xml}
+
+<task>
+Fix the SMT-LIB syntax error. Based on the error location and context:
+
+1. **Identify the exact issue** - The error is at a specific location in the code
+2. **Understand the semantic intent** - Use the informal and formal text to understand what constraint was intended
+3. **Avoid repeating failures** - {num_attempts} attempt(s) already made; don't repeat approaches that failed
+4. **Make a targeted fix** - Only change what's necessary to fix the syntax error
+5. **Preserve semantic constraints** - Keep all constraints from the original informal text
+</task>
+
+<guidelines>
+- Focus your fix on the error location specified above
+- Don't make unnecessary changes to working parts of the code
+- Ensure all parentheses are balanced
+- Verify variable declarations match their usage
+- Keep all semantic constraints from the informal text
+- The informal text is the ground truth for what constraints must be expressed
+- Preserve ALL phase comments and annotations exactly as they are
+- Ensure output is valid SMT-LIB 2.6 syntax for cvc5
+</guidelines>
+
+<response_format>
+CRITICAL: Start your response IMMEDIATELY with <smtlib> tag.
+- Put the fixed SMT-LIB code inside <smtlib></smtlib> tags
+- Do NOT add any text before or after the tags
+- Do NOT use markdown code blocks
+- Do NOT add explanations outside the tags
+</response_format>
+
+RESPOND NOW WITH <smtlib>YOUR_FIXED_CODE_HERE</smtlib>:"""
+
+
 def get_formalization_prompt(informal_text: str) -> str:
     """Get the formalization prompt with text substituted.
 
@@ -214,3 +270,34 @@ def get_error_fixing_prompt(smt_code: str, error_message: str) -> str:
         Complete prompt for error fixing
     """
     return ERROR_FIXING_PROMPT.format(smt_code=smt_code, error_message=error_message)
+
+
+def get_error_fixing_with_context_prompt(
+    informal_text: str,
+    formal_text: str,
+    smt_code: str,
+    error_summary_xml: str,
+    previous_fixes_xml: str,
+    num_attempts: int,
+) -> str:
+    """Get context-rich error fixing prompt with semantic context and attempt history.
+
+    Args:
+        informal_text: Original informal constraint from user
+        formal_text: Formalized version of the constraint
+        smt_code: Current SMT-LIB code with error
+        error_summary_xml: XML-formatted error summary with location and context
+        previous_fixes_xml: XML-formatted history of previous fix attempts
+        num_attempts: Current attempt number
+
+    Returns:
+        Complete prompt for context-rich error fixing
+    """
+    return ERROR_FIXING_WITH_CONTEXT_PROMPT.format(
+        informal_text=informal_text,
+        formal_text=formal_text,
+        smt_code=smt_code,
+        error_summary_xml=error_summary_xml,
+        previous_fixes_xml=previous_fixes_xml,
+        num_attempts=num_attempts,
+    )

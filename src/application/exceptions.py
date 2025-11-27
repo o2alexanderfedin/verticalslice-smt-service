@@ -122,16 +122,24 @@ class ValidationError(PipelineError):
     Attributes:
         message: Human-readable error message
         attempts: Number of attempts made before failure
+        last_error: Last error message from the solver (alias for final_error)
         final_error: Last error message from the solver
         smt_code: The SMT-LIB code that failed validation
+        informal_text: Original informal constraint (for diagnostics)
+        formal_text: Formalized constraint (for diagnostics)
+        attempt_history: History of all attempts (for diagnostics)
     """
 
     def __init__(
         self,
         message: str,
         attempts: int,
-        final_error: str,
-        smt_code: str,
+        last_error: str = "",
+        final_error: str | None = None,
+        smt_code: str = "",
+        informal_text: str = "",
+        formal_text: str = "",
+        attempt_history: list[dict[str, str]] | None = None,
     ) -> None:
         """
         Initialize ValidationError.
@@ -139,18 +147,25 @@ class ValidationError(PipelineError):
         Args:
             message: Human-readable error message
             attempts: Number of attempts made (1-3)
-            final_error: Last solver error message
+            last_error: Last solver error message
+            final_error: Alias for last_error (backward compatibility)
             smt_code: The SMT-LIB code that failed
+            informal_text: Original informal constraint
+            formal_text: Formalized constraint
+            attempt_history: List of attempt details
         """
         super().__init__(message)
         self.attempts = attempts
-        self.final_error = final_error
+        # Support both last_error and final_error parameter names
+        self.last_error = last_error or final_error or ""
+        self.final_error = self.last_error  # Alias for backward compatibility
         self.smt_code = smt_code
+        self.informal_text = informal_text
+        self.formal_text = formal_text
+        self.attempt_history = attempt_history or []
 
     def __str__(self) -> str:
-        """Return detailed error string."""
+        """Return detailed error string without truncation."""
         return (
-            f"{super().__str__()} "
-            f"(attempts={self.attempts}, "
-            f"final_error={self.final_error[:100]}...)"
+            f"{super().__str__()} " f"(attempts={self.attempts}, " f"last_error={self.last_error})"
         )

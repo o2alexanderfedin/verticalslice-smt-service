@@ -177,6 +177,10 @@ class ExtractionStep:
                         logger.info(f"Extraction succeeded after {attempt + 1} attempts")
 
                     # Store in cache if enabled
+                    # SAFETY: This cache write only executes after successful API call.
+                    # If extract_to_smtlib() raises any exception (HTTP 500, 504, 429,
+                    # timeout, connection error), execution jumps to except block at line 202,
+                    # preventing this cache write. See docs/cache-safety-verification.md
                     if self.cache and cache_key:
                         try:
                             cache_data = {
@@ -212,6 +216,9 @@ class ExtractionStep:
         # Return best result if we have one
         if best_smt_code is not None:
             # Store in cache even if degradation threshold not met
+            # NOTE: This caches the best result from successful API calls.
+            # If ALL attempts raised exceptions, best_smt_code remains None
+            # and this cache write never executes. See docs/cache-safety-verification.md
             if self.cache and cache_key:
                 try:
                     cache_data = {

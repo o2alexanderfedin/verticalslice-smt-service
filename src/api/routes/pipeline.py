@@ -8,9 +8,18 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.api.dependencies import get_pipeline_service
-from src.api.models import ErrorResponse, ProcessRequest, ProcessResponse
+from src.api.models import (
+    ErrorLocationModel,
+    ErrorResponse,
+    ProcessRequest,
+    ProcessResponse,
+    ValidationAttemptModel,
+    ValidationDiagnostics,
+)
+from src.application.exceptions import ValidationError
 from src.application.pipeline_service import PipelineService
 from src.shared.result import Err, Ok
+from src.shared.smt_diagnostics import build_error_location
 
 logger = logging.getLogger(__name__)
 
@@ -228,6 +237,66 @@ async def process_informal_text(
 
             case Err(error):
                 logger.warning(f"Pipeline processing failed: {error}")
+
+                # Build rich diagnostics for ValidationError
+                if isinstance(error, ValidationError):
+                    logger.debug("Building rich diagnostics for ValidationError")
+
+                    # Parse error location from the final error message
+                    error_location_domain = build_error_location(error.smt_code, error.last_error)
+
+                    # Convert domain ErrorLocation to API model
+                    error_location_api: ErrorLocationModel | None = None
+                    if error_location_domain:
+                        error_location_api = ErrorLocationModel(
+                            line_number=error_location_domain.line_number,
+                            column_number=error_location_domain.column_number,
+                            error_line=error_location_domain.error_line,
+                            context_before=error_location_domain.context_before,
+                            context_after=error_location_domain.context_after,
+                        )
+
+                    # Convert attempt history to API models
+                    attempt_history_api = [
+                        ValidationAttemptModel(
+                            attempt_number=attempt["attempt_number"],
+                            smt_code=attempt["smt_code"],
+                            solver_error=attempt["solver_error"],
+                            fix_attempted=attempt.get("fix_attempted", ""),
+                        )
+                        for attempt in error.attempt_history
+                    ]
+
+                    # Build diagnostics
+                    diagnostics = ValidationDiagnostics(
+                        informal_text=error.informal_text,
+                        formal_text=error.formal_text,
+                        final_smt_code=error.smt_code,
+                        final_error=error.last_error,
+                        error_location=error_location_api,
+                        attempts=error.attempts,
+                        attempt_history=attempt_history_api,
+                    )
+
+                    # Build error response with diagnostics
+                    error_response = ErrorResponse(
+                        error=str(error),
+                        details={"step": "validation", "attempts": error.attempts},
+                        diagnostics=diagnostics,
+                    )
+
+                    logger.info(
+                        f"Returning ValidationError with diagnostics: "
+                        f"error_location={'parsed' if error_location_api else 'unparsed'}, "
+                        f"attempt_history={len(attempt_history_api)} attempts"
+                    )
+
+                    raise HTTPException(
+                        status_code=422,
+                        detail=error_response.model_dump(mode="json"),
+                    )
+
+                # For other errors, return simple error response
                 raise HTTPException(status_code=422, detail=str(error))
 
     except HTTPException:

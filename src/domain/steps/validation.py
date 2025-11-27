@@ -64,11 +64,18 @@ class ValidationStep:
         self.max_retries = max_retries
         self.solver_timeout = solver_timeout
 
-    async def execute(self, smt_code: str) -> Result[SolverResult, ValidationError]:
+    async def execute(
+        self,
+        smt_code: str,
+        informal_text: str = "",
+        formal_text: str = "",
+    ) -> Result[SolverResult, ValidationError]:
         """Execute solver validation with error correction.
 
         Args:
             smt_code: SMT-LIB code from Step 2
+            informal_text: Original informal constraint (for context-rich fixes)
+            formal_text: Formalized constraint (for context-rich fixes)
 
         Returns:
             Ok(SolverResult) if solver executes successfully
@@ -82,6 +89,13 @@ class ValidationStep:
             logger.debug("Stripped markdown code fences from SMT-LIB code")
 
         last_error = ""
+        previous_attempts: list[dict[str, str]] = []
+        use_context_rich = bool(informal_text and formal_text)
+
+        if use_context_rich:
+            logger.debug("Using context-rich error fixing with semantic context")
+        else:
+            logger.debug("Using simple error fixing (no semantic context)")
 
         for attempt in range(self.max_retries):
             logger.debug(f"Validation attempt {attempt + 1}/{self.max_retries}")
@@ -126,26 +140,77 @@ class ValidationStep:
                 last_error = raw_output or "Unknown error"
                 logger.warning(f"Attempt {attempt + 1} failed with error: {last_error}")
 
+                # Record this attempt for history
+                previous_attempts.append(
+                    {
+                        "attempt_number": attempt + 1,
+                        "smt_code": current_code,
+                        "solver_error": last_error,
+                        "fix_attempted": "",  # Will be updated if fix is attempted
+                    }
+                )
+
                 if attempt < self.max_retries - 1:
                     # Use LLM to fix the error
                     logger.debug("Requesting LLM to fix SMT errors")
-                    fixed_code = await self.llm_provider.fix_smt_errors(current_code, last_error)
+
+                    if use_context_rich:
+                        # Use context-rich fixing with semantic context
+                        fixed_code = await self.llm_provider.fix_smt_errors_with_context(
+                            informal_text=informal_text,
+                            formal_text=formal_text,
+                            smt_code=current_code,
+                            error_message=last_error,
+                            previous_attempts=previous_attempts[:-1],  # Exclude current attempt
+                            attempt_number=attempt + 1,
+                        )
+                    else:
+                        # Use simple fixing without context
+                        fixed_code = await self.llm_provider.fix_smt_errors(
+                            current_code, last_error
+                        )
+
                     # Strip markdown fences from fixed code
                     current_code = _strip_markdown_fences(fixed_code)
                     logger.debug("Received fixed SMT code from LLM")
+
+                    # Update the attempt record with the fix that was tried
+                    previous_attempts[-1]["fix_attempted"] = current_code
 
             except Exception as e:
                 last_error = str(e)
                 logger.error(f"Attempt {attempt + 1} raised exception: {e}")
 
+                # Record this attempt for history
+                previous_attempts.append(
+                    {
+                        "attempt_number": attempt + 1,
+                        "smt_code": current_code,
+                        "solver_error": last_error,
+                        "fix_attempted": "",
+                    }
+                )
+
                 if attempt < self.max_retries - 1:
                     # Try to fix
                     try:
-                        fixed_code = await self.llm_provider.fix_smt_errors(
-                            current_code, last_error
-                        )
+                        if use_context_rich:
+                            fixed_code = await self.llm_provider.fix_smt_errors_with_context(
+                                informal_text=informal_text,
+                                formal_text=formal_text,
+                                smt_code=current_code,
+                                error_message=last_error,
+                                previous_attempts=previous_attempts[:-1],
+                                attempt_number=attempt + 1,
+                            )
+                        else:
+                            fixed_code = await self.llm_provider.fix_smt_errors(
+                                current_code, last_error
+                            )
                         # Strip markdown fences from fixed code
                         current_code = _strip_markdown_fences(fixed_code)
+                        # Update the attempt record with the fix that was tried
+                        previous_attempts[-1]["fix_attempted"] = current_code
                     except Exception as fix_error:
                         logger.error(f"Failed to fix error: {fix_error}")
                         # Continue to next iteration with same code
@@ -161,6 +226,10 @@ class ValidationStep:
                     f"Last error: {last_error}"
                 ),
                 last_error=last_error,
+                smt_code=current_code,
                 attempts=self.max_retries,
+                informal_text=informal_text,
+                formal_text=formal_text,
+                attempt_history=previous_attempts,
             )
         )

@@ -303,6 +303,77 @@ class ProcessResponse(BaseModel):
         )
 
 
+class ErrorLocationModel(BaseModel):
+    """Location of an error in SMT-LIB code."""
+
+    line_number: int | None = Field(
+        default=None,
+        description="Line where error occurred (1-indexed)",
+    )
+    column_number: int | None = Field(
+        default=None,
+        description="Column where error occurred (1-indexed)",
+    )
+    error_line: str | None = Field(
+        default=None,
+        description="The actual line of code with the error",
+    )
+    context_before: list[str] = Field(
+        default_factory=list,
+        description="Up to 3 lines of code before the error",
+    )
+    context_after: list[str] = Field(
+        default_factory=list,
+        description="Up to 3 lines of code after the error",
+    )
+
+
+class ValidationAttemptModel(BaseModel):
+    """Details of a single validation attempt."""
+
+    attempt_number: int = Field(
+        description="Attempt number (1-indexed)",
+    )
+    smt_code: str = Field(
+        description="SMT-LIB code that was attempted",
+    )
+    solver_error: str = Field(
+        description="Error message from the solver",
+    )
+    fix_attempted: str = Field(
+        default="",
+        description="Fix that was attempted (empty if this was the last attempt)",
+    )
+
+
+class ValidationDiagnostics(BaseModel):
+    """Rich diagnostic information for validation errors."""
+
+    informal_text: str = Field(
+        description="Original informal constraint from user",
+    )
+    formal_text: str = Field(
+        description="Formalized version of the constraint",
+    )
+    final_smt_code: str = Field(
+        description="Final SMT-LIB code that failed validation",
+    )
+    final_error: str = Field(
+        description="Final error message from solver",
+    )
+    error_location: ErrorLocationModel | None = Field(
+        default=None,
+        description="Parsed error location with context (if parseable)",
+    )
+    attempts: int = Field(
+        description="Number of attempts made",
+    )
+    attempt_history: list[ValidationAttemptModel] = Field(
+        default_factory=list,
+        description="History of all validation attempts",
+    )
+
+
 class ErrorResponse(BaseModel):
     """Error response model returned when pipeline processing fails.
 
@@ -332,6 +403,14 @@ class ErrorResponse(BaseModel):
             {"step": "formalization", "attempts": 3, "final_similarity": 0.89, "threshold": 0.91}
         ],
     )
+    diagnostics: ValidationDiagnostics | None = Field(
+        default=None,
+        description=(
+            "Rich diagnostic information for validation errors. "
+            "Includes original intent, error location, code context, and attempt history. "
+            "Only present for validation (Step 3) errors."
+        ),
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -350,6 +429,21 @@ class ErrorResponse(BaseModel):
                     "details": {
                         "step": "validation",
                         "solver_output": "Parse error at line 3: unexpected token ','",
+                    },
+                    "diagnostics": {
+                        "informal_text": "x must be greater than 5",
+                        "formal_text": "The variable x must satisfy: x > 5",
+                        "final_smt_code": "(declare-const x Int)\n(assert (> x 5))\n(check-sat)",
+                        "final_error": "Expected RPAREN_TOK, got `at` (SYMBOL)",
+                        "error_location": {
+                            "line_number": 2,
+                            "column_number": 15,
+                            "error_line": "(assert (> x 5))",
+                            "context_before": ["(declare-const x Int)"],
+                            "context_after": ["(check-sat)"],
+                        },
+                        "attempts": 3,
+                        "attempt_history": [],
                     },
                 },
             ]
