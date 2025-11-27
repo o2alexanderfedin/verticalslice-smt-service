@@ -10,11 +10,12 @@ Tests cover:
 - LLM provider exceptions
 - Embedding provider exceptions
 - Similarity calculation edge cases
-- Caching behavior
+- Caching behavior with comprehensive error coverage
 """
 
 from unittest.mock import AsyncMock, Mock
 
+import anthropic
 import numpy as np
 import pytest
 
@@ -556,18 +557,28 @@ class TestFormalizationCaching:
         mock_cache.set.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_llm_exception_prevents_cache_write(
+    async def test_api_error_prevents_cache_write(
         self,
         step_with_cache: FormalizationStep,
         mock_llm_provider,
         mock_embedding_provider,
         mock_cache,
     ) -> None:
-        """Test that LLM exceptions prevent cache write."""
+        """Test that anthropic.APIError prevents cache write.
+
+        This verifies the critical safety property: if the Anthropic API
+        returns an error (500, etc.), we must NOT cache anything.
+        """
         informal_text = "x" * 300
 
-        # All LLM calls fail
-        mock_llm_provider.formalize = AsyncMock(side_effect=RuntimeError("LLM error"))
+        # Mock API error (e.g., HTTP 500 Internal Server Error)
+        mock_llm_provider.formalize = AsyncMock(
+            side_effect=anthropic.InternalServerError(
+                message="Internal server error",
+                response=Mock(status_code=500),
+                body=None,
+            )
+        )
 
         source_embedding = np.random.rand(384).astype(np.float32)
         mock_embedding_provider.embed = AsyncMock(return_value=source_embedding)
@@ -576,8 +587,110 @@ class TestFormalizationCaching:
 
         # Should return Err
         assert isinstance(result, Err)
+        assert isinstance(result.error, FormalizationError)
 
-        # Cache should not be written
+        # CRITICAL: Verify cache was NOT written
+        mock_cache.set.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_api_timeout_prevents_cache_write(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_cache,
+    ) -> None:
+        """Test that anthropic.APITimeoutError prevents cache write.
+
+        This covers the HTTP 504 Gateway Timeout scenario that was observed
+        in production. Timeouts must NOT be cached.
+        """
+        informal_text = "x" * 300
+
+        # Mock API timeout (e.g., HTTP 504 Gateway Timeout)
+        mock_llm_provider.formalize = AsyncMock(
+            side_effect=anthropic.APITimeoutError(request=Mock())
+        )
+
+        source_embedding = np.random.rand(384).astype(np.float32)
+        mock_embedding_provider.embed = AsyncMock(return_value=source_embedding)
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Should return Err
+        assert isinstance(result, Err)
+        assert isinstance(result.error, FormalizationError)
+
+        # CRITICAL: Verify cache was NOT written
+        mock_cache.set.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_error_prevents_cache_write(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_cache,
+    ) -> None:
+        """Test that anthropic.RateLimitError prevents cache write.
+
+        Rate limit errors (HTTP 429) should not be cached.
+        """
+        informal_text = "x" * 300
+
+        # Mock rate limit error (HTTP 429)
+        mock_llm_provider.formalize = AsyncMock(
+            side_effect=anthropic.RateLimitError(
+                message="Rate limit exceeded",
+                response=Mock(status_code=429),
+                body=None,
+            )
+        )
+
+        source_embedding = np.random.rand(384).astype(np.float32)
+        mock_embedding_provider.embed = AsyncMock(return_value=source_embedding)
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Should return Err
+        assert isinstance(result, Err)
+        assert isinstance(result.error, FormalizationError)
+
+        # CRITICAL: Verify cache was NOT written
+        mock_cache.set.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_connection_error_prevents_cache_write(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_cache,
+    ) -> None:
+        """Test that anthropic.APIConnectionError prevents cache write.
+
+        Network/connection errors should not be cached.
+        """
+        informal_text = "x" * 300
+
+        # Mock connection error
+        mock_llm_provider.formalize = AsyncMock(
+            side_effect=anthropic.APIConnectionError(
+                message="Connection failed",
+                request=Mock(),
+            )
+        )
+
+        source_embedding = np.random.rand(384).astype(np.float32)
+        mock_embedding_provider.embed = AsyncMock(return_value=source_embedding)
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Should return Err
+        assert isinstance(result, Err)
+        assert isinstance(result.error, FormalizationError)
+
+        # CRITICAL: Verify cache was NOT written
         mock_cache.set.assert_not_called()
 
     @pytest.mark.asyncio
@@ -691,3 +804,40 @@ class TestFormalizationCaching:
         assert cached_data["formal_text"] == "Attempt 3"
         assert cached_data["similarity"] == 0.89
         assert cached_data["attempts"] == 3
+
+    @pytest.mark.asyncio
+    async def test_successful_formalization_without_cache(
+        self,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_semantic_verifier,
+    ) -> None:
+        """Test successful formalization works without cache."""
+        informal_text = "x" * 300
+        formal_text = "The variable x must be greater than 5"
+
+        # Create step without cache
+        step_without_cache = FormalizationStep(
+            llm_provider=mock_llm_provider,
+            embedding_provider=mock_embedding_provider,
+            verifier=mock_semantic_verifier,
+            threshold=0.91,
+            max_retries=3,
+            skip_threshold=200,
+            cache=None,  # No cache
+        )
+
+        # Setup mocks
+        mock_llm_provider.formalize = AsyncMock(return_value=formal_text)
+        source_embedding = np.random.rand(384).astype(np.float32)
+        formal_embedding = np.random.rand(384).astype(np.float32)
+        mock_embedding_provider.embed = AsyncMock(side_effect=[source_embedding, formal_embedding])
+        mock_semantic_verifier.calculate_similarity = lambda src, fmt: 0.95
+
+        result = await step_without_cache.execute(informal_text)
+
+        # Verify success
+        assert isinstance(result, Ok)
+        assert result.value.formal_text == formal_text
+        assert result.value.similarity_score == 0.95
+        assert result.value.attempts == 1
