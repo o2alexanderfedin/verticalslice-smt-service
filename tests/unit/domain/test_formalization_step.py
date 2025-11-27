@@ -10,15 +10,17 @@ Tests cover:
 - LLM provider exceptions
 - Embedding provider exceptions
 - Similarity calculation edge cases
+- Caching behavior
 """
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import numpy as np
 import pytest
 
 from src.domain.exceptions import FormalizationError
 from src.domain.steps.formalization import FormalizationStep
+from src.infrastructure.cache import AsyncFileCache
 from src.shared.result import Err, Ok
 
 
@@ -452,3 +454,240 @@ class TestFormalizationStep:
         # Should need second attempt
         assert isinstance(result, Ok)
         assert result.value.attempts == 2
+
+
+class TestFormalizationCaching:
+    """Tests for FormalizationStep caching behavior."""
+
+    @pytest.fixture
+    def mock_cache(self):
+        """Create mock cache."""
+        cache = Mock(spec=AsyncFileCache)
+        cache.get = AsyncMock(return_value=None)
+        cache.set = AsyncMock()
+        cache._generate_cache_key = Mock(return_value="test_formalization_cache_key")
+        return cache
+
+    @pytest.fixture
+    def step_with_cache(
+        self, mock_llm_provider, mock_embedding_provider, mock_semantic_verifier, mock_cache
+    ) -> FormalizationStep:
+        """Create formalization step with mocked cache."""
+        return FormalizationStep(
+            llm_provider=mock_llm_provider,
+            embedding_provider=mock_embedding_provider,
+            verifier=mock_semantic_verifier,
+            threshold=0.91,
+            max_retries=3,
+            skip_threshold=200,
+            cache=mock_cache,
+        )
+
+    @pytest.mark.asyncio
+    async def test_successful_formalization_with_caching(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_semantic_verifier,
+        mock_cache,
+    ) -> None:
+        """Test successful formalization writes to cache."""
+        informal_text = "x" * 300
+        formal_text = "The variable x must be greater than 5"
+
+        # Setup mocks
+        mock_llm_provider.formalize = AsyncMock(return_value=formal_text)
+        source_embedding = np.random.rand(384).astype(np.float32)
+        formal_embedding = np.random.rand(384).astype(np.float32)
+        mock_embedding_provider.embed = AsyncMock(side_effect=[source_embedding, formal_embedding])
+        mock_semantic_verifier.calculate_similarity = lambda src, fmt: 0.95
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Verify success
+        assert isinstance(result, Ok)
+        assert result.value.formal_text == formal_text
+        assert result.value.similarity_score == 0.95
+        assert result.value.attempts == 1
+
+        # Verify cache was written
+        mock_cache.set.assert_called_once()
+        call_args = mock_cache.set.call_args
+        assert call_args[0][0] == "test_formalization_cache_key"
+        cached_data = call_args[0][1]
+        assert cached_data["formal_text"] == formal_text
+        assert cached_data["similarity"] == 0.95
+        assert cached_data["attempts"] == 1
+
+    @pytest.mark.asyncio
+    async def test_formalization_cache_hit(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_cache,
+    ) -> None:
+        """Test that cache hit returns cached result without calling LLM."""
+        informal_text = "x" * 300
+        cached_data = {
+            "formal_text": "Cached formal text",
+            "similarity": 0.93,
+            "attempts": 2,
+        }
+
+        # Mock cache hit
+        mock_cache.get = AsyncMock(return_value=cached_data)
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Verify cached result returned
+        assert isinstance(result, Ok)
+        assert result.value.formal_text == "Cached formal text"
+        assert result.value.similarity_score == 0.93
+        assert result.value.attempts == 2
+
+        # Verify no LLM or embedding calls
+        mock_llm_provider.formalize.assert_not_called()
+        mock_embedding_provider.embed.assert_not_called()
+
+        # Cache get was called, but set was not (already cached)
+        mock_cache.get.assert_called_once()
+        mock_cache.set.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_llm_exception_prevents_cache_write(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_cache,
+    ) -> None:
+        """Test that LLM exceptions prevent cache write."""
+        informal_text = "x" * 300
+
+        # All LLM calls fail
+        mock_llm_provider.formalize = AsyncMock(side_effect=RuntimeError("LLM error"))
+
+        source_embedding = np.random.rand(384).astype(np.float32)
+        mock_embedding_provider.embed = AsyncMock(return_value=source_embedding)
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Should return Err
+        assert isinstance(result, Err)
+
+        # Cache should not be written
+        mock_cache.set.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_cache_read_failure_doesnt_break_execution(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_semantic_verifier,
+        mock_cache,
+    ) -> None:
+        """Test that cache read failures don't prevent formalization."""
+        informal_text = "x" * 300
+        formal_text = "Formal text"
+
+        # Cache read raises exception
+        mock_cache.get = AsyncMock(side_effect=RuntimeError("Cache read error"))
+
+        # Normal formalization mocks
+        mock_llm_provider.formalize = AsyncMock(return_value=formal_text)
+        source_embedding = np.random.rand(384).astype(np.float32)
+        formal_embedding = np.random.rand(384).astype(np.float32)
+        mock_embedding_provider.embed = AsyncMock(side_effect=[source_embedding, formal_embedding])
+        mock_semantic_verifier.calculate_similarity = lambda src, fmt: 0.95
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Should succeed despite cache error
+        assert isinstance(result, Ok)
+        assert result.value.formal_text == formal_text
+        assert result.value.similarity_score == 0.95
+
+        # Cache write should still be attempted
+        mock_cache.set.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_cache_write_failure_doesnt_break_execution(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_semantic_verifier,
+        mock_cache,
+    ) -> None:
+        """Test that cache write failures don't prevent success."""
+        informal_text = "x" * 300
+        formal_text = "Formal text"
+
+        # Cache write raises exception
+        mock_cache.set = AsyncMock(side_effect=RuntimeError("Cache write error"))
+
+        # Normal formalization mocks
+        mock_llm_provider.formalize = AsyncMock(return_value=formal_text)
+        source_embedding = np.random.rand(384).astype(np.float32)
+        formal_embedding = np.random.rand(384).astype(np.float32)
+        mock_embedding_provider.embed = AsyncMock(side_effect=[source_embedding, formal_embedding])
+        mock_semantic_verifier.calculate_similarity = lambda src, fmt: 0.95
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Should succeed despite cache error
+        assert isinstance(result, Ok)
+        assert result.value.formal_text == formal_text
+        assert result.value.similarity_score == 0.95
+
+    @pytest.mark.asyncio
+    async def test_best_result_cached_after_retries(
+        self,
+        step_with_cache: FormalizationStep,
+        mock_llm_provider,
+        mock_embedding_provider,
+        mock_semantic_verifier,
+        mock_cache,
+    ) -> None:
+        """Test that best result is cached even if threshold not met."""
+        informal_text = "x" * 300
+
+        # All attempts below threshold
+        mock_llm_provider.formalize = AsyncMock(side_effect=["Attempt 1", "Attempt 2", "Attempt 3"])
+
+        source_embedding = np.random.rand(384).astype(np.float32)
+        formal_embeddings = [np.random.rand(384).astype(np.float32) for _ in range(3)]
+        mock_embedding_provider.embed = AsyncMock(
+            side_effect=[source_embedding] + formal_embeddings
+        )
+
+        # All attempts below threshold, but improving
+        similarity_scores = [0.75, 0.82, 0.89]
+        call_count = 0
+
+        def get_similarity(src, fmt):
+            nonlocal call_count
+            result = similarity_scores[call_count]
+            call_count += 1
+            return result
+
+        mock_semantic_verifier.calculate_similarity = get_similarity
+
+        result = await step_with_cache.execute(informal_text)
+
+        # Should return best result
+        assert isinstance(result, Ok)
+        assert result.value.formal_text == "Attempt 3"
+        assert result.value.similarity_score == 0.89
+        assert result.value.attempts == 3
+
+        # Verify cache was written with best result
+        mock_cache.set.assert_called_once()
+        call_args = mock_cache.set.call_args
+        cached_data = call_args[0][1]
+        assert cached_data["formal_text"] == "Attempt 3"
+        assert cached_data["similarity"] == 0.89
+        assert cached_data["attempts"] == 3

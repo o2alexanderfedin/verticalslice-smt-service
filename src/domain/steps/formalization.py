@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from src.domain.exceptions import FormalizationError
 from src.domain.models import FormalizationResult
+from src.infrastructure.cache import AsyncFileCache
 from src.shared.result import Err, Ok, Result
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class FormalizationStep:
-    """Step 1: Formalization with semantic verification."""
+    """Step 1: Formalization with semantic verification and caching."""
 
     def __init__(
         self,
@@ -28,6 +29,7 @@ class FormalizationStep:
         threshold: float = 0.91,
         max_retries: int = 3,
         skip_threshold: int = 200,
+        cache: AsyncFileCache | None = None,
     ):
         """Initialize formalization step.
 
@@ -38,6 +40,7 @@ class FormalizationStep:
             threshold: Minimum similarity threshold (default 0.91)
             max_retries: Maximum retry attempts (default 3)
             skip_threshold: Skip formalization for inputs shorter than this (default 200)
+            cache: Optional AsyncFileCache for caching formalization results
         """
         self.llm_provider = llm_provider
         self.embedding_provider = embedding_provider
@@ -45,11 +48,12 @@ class FormalizationStep:
         self.threshold = threshold
         self.max_retries = max_retries
         self.skip_threshold = skip_threshold
+        self.cache = cache
 
     async def execute(
         self, informal_text: str, force_skip: bool = False
     ) -> Result[FormalizationResult, FormalizationError]:
-        """Execute formalization with retry logic.
+        """Execute formalization with retry logic and caching.
 
         CRITICAL OPTIMIZATION: Compute source embedding ONCE before loop,
         reuse in all iterations. Only compute new embedding for each attempt.
@@ -86,6 +90,29 @@ class FormalizationStep:
                     attempts=0,  # No LLM calls needed
                 )
             )
+
+        # Check cache if enabled
+        cache_key: str | None = None
+        if self.cache:
+            try:
+                cache_key = self.cache._generate_cache_key(informal_text, "formalization")
+                cached_result = await self.cache.get(cache_key)
+                if cached_result is not None:
+                    logger.info(
+                        f"Formalization cache hit: "
+                        f"formal_text_length={len(cached_result['formal_text'])}, "
+                        f"similarity={cached_result['similarity']:.4f}"
+                    )
+                    return Ok(
+                        FormalizationResult(
+                            formal_text=cached_result["formal_text"],
+                            similarity_score=cached_result["similarity"],
+                            attempts=cached_result["attempts"],
+                        )
+                    )
+                logger.debug("Formalization cache miss")
+            except Exception as e:
+                logger.warning(f"Cache read failed (continuing without cache): {e}")
 
         try:
             # OPTIMIZATION: Compute source embedding ONCE
@@ -147,6 +174,24 @@ class FormalizationStep:
                 # Check threshold
                 if similarity >= self.threshold:
                     logger.info(f"Formalization succeeded after {attempt + 1} attempts")
+
+                    # Store in cache if enabled
+                    # SAFETY: This cache write only executes after successful API call.
+                    # If formalize() raises any exception (HTTP 500, 504, 429,
+                    # timeout, connection error), execution jumps to except block at line 192,
+                    # preventing this cache write. See docs/cache-safety-verification.md
+                    if self.cache and cache_key:
+                        try:
+                            cache_data = {
+                                "formal_text": formal_text,
+                                "similarity": similarity,
+                                "attempts": attempt + 1,
+                            }
+                            await self.cache.set(cache_key, cache_data)
+                            logger.debug(f"Stored formalization result in cache: {cache_key}")
+                        except Exception as e:
+                            logger.warning(f"Cache write failed (ignoring): {e}")
+
                     return Ok(
                         FormalizationResult(
                             formal_text=formal_text,
@@ -171,6 +216,22 @@ class FormalizationStep:
 
         # Return best result if we have one
         if best_formal_text is not None:
+            # Store in cache even if similarity threshold not met
+            # NOTE: This caches the best result from successful API calls.
+            # If ALL attempts raised exceptions, best_formal_text remains None
+            # and this cache write never executes. See docs/cache-safety-verification.md
+            if self.cache and cache_key:
+                try:
+                    cache_data = {
+                        "formal_text": best_formal_text,
+                        "similarity": best_similarity,
+                        "attempts": self.max_retries,
+                    }
+                    await self.cache.set(cache_key, cache_data)
+                    logger.debug(f"Stored formalization result in cache: {cache_key}")
+                except Exception as e:
+                    logger.warning(f"Cache write failed (ignoring): {e}")
+
             return Ok(
                 FormalizationResult(
                     formal_text=best_formal_text,

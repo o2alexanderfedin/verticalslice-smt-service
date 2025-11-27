@@ -136,6 +136,7 @@ class PipelineService:
             threshold=self.settings.formalization_similarity_threshold,
             max_retries=self.settings.formalization_max_retries,
             skip_threshold=self.settings.formalization_skip_threshold,
+            cache=self.cache,
         )
 
         formalization_result = await formalization_step.execute(
