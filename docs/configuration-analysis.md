@@ -24,7 +24,7 @@
 
 ### 1. Dockerfile Analysis
 
-**File:** `/Users/alexanderfedin/Projects/hapyy/mpv/verticalslice-smt-service/Dockerfile`
+**File:** `~/Projects/hapyy/mpv/verticalslice-smt-service/Dockerfile`
 
 #### Current State
 
@@ -98,7 +98,7 @@ docker buildx build --platform linux/amd64 ...
 
 ### 2. GitHub Actions Workflow Analysis
 
-**File:** `/Users/alexanderfedin/Projects/hapyy/mpv/verticalslice-smt-service/.github/workflows/deploy.yml`
+**File:** `~/Projects/hapyy/mpv/verticalslice-smt-service/.github/workflows/deploy.yml`
 
 #### Current State (Lines 155-182)
 
@@ -258,7 +258,7 @@ uses: docker/build-push-action@v6  # Currently v5
 
 ### 3. App Platform Specification Analysis
 
-**File:** `/Users/alexanderfedin/Projects/hapyy/mpv/verticalslice-smt-service/app.yaml`
+**File:** `~/Projects/hapyy/mpv/verticalslice-smt-service/app.yaml`
 
 #### Current State (Lines 11-15)
 

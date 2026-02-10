@@ -225,7 +225,7 @@ make down
 ## Files Created
 
 ```
-/Users/alexanderfedin/Projects/hapyy/mpv/verticalslice-smt-service/
+~/Projects/hapyy/mpv/verticalslice-smt-service/
 ├── Dockerfile                    # Multi-stage production build
 ├── .dockerignore                 # Build optimization
 ├── docker-compose.yml            # Production deployment config
